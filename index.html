@@ -4,36 +4,46 @@
     <meta charset="UTF-8">
     <title>ねいろのダッシュ！</title>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+    <style>body { margin: 0; }</style>
 </head>
 <body>
 <script>
     const config = {
         type: Phaser.AUTO,
         width: 800, height: 600,
-        physics: { default: 'arcade', arcade: { gravity: { y: 600 } } },
+        physics: { default: 'arcade', arcade: { gravity: { y: 800 } } },
         scene: { preload: preload, create: create, update: update }
     };
     const game = new Phaser.Game(config);
 
     function preload() {
-        // GitHubにアップロードした画像ファイルを読み込みます
         this.load.image('run', 'Neiro1.png');
         this.load.image('jump', 'Neiro2.png');
         this.load.image('goal', 'Neiro3.png');
     }
 
     function create() {
-        // キャラクターを画面中央に配置
+        // 地面を作成
+        this.platforms = this.physics.add.staticGroup();
+        // 画面の下端に白い地面のような当たり判定を作成
+        this.platforms.create(400, 580, null).setScale(800, 40).refreshBody();
+
+        // プレイヤー作成
         this.player = this.physics.add.sprite(400, 300, 'run');
         this.player.setCollideWorldBounds(true);
+        this.player.setBounce(0.2); // 少し跳ねる設定
+
+        // プレイヤーと地面を衝突させる
+        this.physics.add.collider(this.player, this.platforms);
+
         this.cursors = this.input.keyboard.createCursorKeys();
     }
 
     function update() {
-        // 左右キーで移動
+        // 左右の移動
         if (this.cursors.left.isDown) {
             this.player.setVelocityX(-200);
-            this.player.setTexture('run'); // 走る画像
+            this.player.setTexture('run');
         } else if (this.cursors.right.isDown) {
             this.player.setVelocityX(200);
             this.player.setTexture('run');
@@ -41,17 +51,16 @@
             this.player.setVelocityX(0);
         }
 
-        // 上キーでジャンプ
+        // ジャンプ
         if (this.cursors.up.isDown && this.player.body.touching.down) {
-            this.player.setVelocityY(-400);
-            this.player.setTexture('jump'); // ジャンプ画像
+            this.player.setVelocityY(-500);
         }
-        
-        // 空中にいるときはジャンプ画像にする
+
+        // 空中にいるときはジャンプ画像、着地したら走る画像
         if (!this.player.body.touching.down) {
             this.player.setTexture('jump');
-        } else if (this.player.body.velocity.x === 0) {
-            this.player.setTexture('run'); // 止まっているときは走る画像（仮）
+        } else {
+            this.player.setTexture('run');
         }
     }
 </script>
