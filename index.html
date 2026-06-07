@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>ねいろのダッシュ！</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+</head>
+<body>
+<script>
+    const config = {
+        type: Phaser.AUTO,
+        width: 800, height: 600,
+        physics: { default: 'arcade', arcade: { gravity: { y: 600 } } },
+        scene: { preload: preload, create: create, update: update }
+    };
+    const game = new Phaser.Game(config);
+
+    function preload() {
+        // GitHubにアップロードした画像ファイルを読み込みます
+        this.load.image('run', 'Neiro1.png');
+        this.load.image('jump', 'Neiro2.png');
+        this.load.image('goal', 'Neiro3.png');
+    }
+
+    function create() {
+        // キャラクターを画面中央に配置
+        this.player = this.physics.add.sprite(400, 300, 'run');
+        this.player.setCollideWorldBounds(true);
+        this.cursors = this.input.keyboard.createCursorKeys();
+    }
+
+    function update() {
+        // 左右キーで移動
+        if (this.cursors.left.isDown) {
+            this.player.setVelocityX(-200);
+            this.player.setTexture('run'); // 走る画像
+        } else if (this.cursors.right.isDown) {
+            this.player.setVelocityX(200);
+            this.player.setTexture('run');
+        } else {
+            this.player.setVelocityX(0);
+        }
+
+        // 上キーでジャンプ
+        if (this.cursors.up.isDown && this.player.body.touching.down) {
+            this.player.setVelocityY(-400);
+            this.player.setTexture('jump'); // ジャンプ画像
+        }
+        
+        // 空中にいるときはジャンプ画像にする
+        if (!this.player.body.touching.down) {
+            this.player.setTexture('jump');
+        } else if (this.player.body.velocity.x === 0) {
+            this.player.setTexture('run'); // 止まっているときは走る画像（仮）
+        }
+    }
+</script>
+</body>
+</html>
