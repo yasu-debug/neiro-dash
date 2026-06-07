@@ -39,28 +39,31 @@
         this.cursors = this.input.keyboard.createCursorKeys();
     }
 
-    function update() {
-        // 左右の移動
+function update() {
+        // 左右の移動と画像切り替え
         if (this.cursors.left.isDown) {
             this.player.setVelocityX(-200);
-            this.player.setTexture('run');
+            // 着地している時だけ走る画像にする
+            if (this.player.body.touching.down) {
+                this.player.setTexture('run');
+            }
         } else if (this.cursors.right.isDown) {
             this.player.setVelocityX(200);
-            this.player.setTexture('run');
+            if (this.player.body.touching.down) {
+                this.player.setTexture('run');
+            }
         } else {
             this.player.setVelocityX(0);
         }
 
-        // ジャンプ
+        // ジャンプの処理
         if (this.cursors.up.isDown && this.player.body.touching.down) {
             this.player.setVelocityY(-500);
         }
 
-        // 空中にいるときはジャンプ画像、着地したら走る画像
+        // 空中にいるときは強制的にジャンプ画像にする
         if (!this.player.body.touching.down) {
             this.player.setTexture('jump');
-        } else {
-            this.player.setTexture('run');
         }
     }
 </script>
