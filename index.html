@@ -23,15 +23,17 @@
     }
 
     function create() {
-        // 地面を作成
+        // 1. 地面を作成（透明な画像がない場合でも機能するように修正）
         this.platforms = this.physics.add.staticGroup();
-        // 画面の下端に白い地面のような当たり判定を作成
-        this.platforms.create(400, 580, null).setScale(800, 40).refreshBody();
+        // 580の高さに、横幅800・高さ40の地面を確実に作成
+        let ground = this.add.rectangle(400, 580, 800, 40, 0x000000, 0); 
+        this.physics.add.existing(ground, true);
+        this.platforms.add(ground);
 
         // プレイヤー作成
         this.player = this.physics.add.sprite(400, 300, 'run');
         this.player.setCollideWorldBounds(true);
-        this.player.setBounce(0.2); // 少し跳ねる設定
+        this.player.setBounce(0.2);
 
         // プレイヤーと地面を衝突させる
         this.physics.add.collider(this.player, this.platforms);
@@ -39,19 +41,19 @@
         this.cursors = this.input.keyboard.createCursorKeys();
     }
 
-function update() {
-        // 左右の移動と画像切り替え
+    function update() {
+        // まず基本の状態：地面に触れていないならジャンプ画像、触れているなら走る画像
+        if (!this.player.body.touching.down) {
+            this.player.setTexture('jump');
+        } else {
+            this.player.setTexture('run');
+        }
+
+        // 左右の移動（移動中もジャンプ中かどうかの状態は維持される）
         if (this.cursors.left.isDown) {
             this.player.setVelocityX(-200);
-            // 着地している時だけ走る画像にする
-            if (this.player.body.touching.down) {
-                this.player.setTexture('run');
-            }
         } else if (this.cursors.right.isDown) {
             this.player.setVelocityX(200);
-            if (this.player.body.touching.down) {
-                this.player.setTexture('run');
-            }
         } else {
             this.player.setVelocityX(0);
         }
@@ -59,11 +61,6 @@ function update() {
         // ジャンプの処理
         if (this.cursors.up.isDown && this.player.body.touching.down) {
             this.player.setVelocityY(-500);
-        }
-
-        // 空中にいるときは強制的にジャンプ画像にする
-        if (!this.player.body.touching.down) {
-            this.player.setTexture('jump');
         }
     }
 </script>
