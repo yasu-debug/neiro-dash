@@ -1,69 +1,4 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>ねいろのダッシュ！</title>
-    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
-        
-        const firebaseConfig = {
-            apiKey: "AIzaSyACV13o8mGiTP6m2wtvRPBG_wX2Xcbb-hI",
-            authDomain: "neirogameanoban.firebaseapp.com",
-            projectId: "neirogameanoban",
-            storageBucket: "neirogameanoban.firebasestorage.app",
-            messagingSenderId: "884708706267",
-            appId: "1:884708706267:web:b9ffc17361554427aa89fe",
-            measurementId: "G-303LBLLY8B"
-        };
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const RANKING_COLLECTION = "neiro_dash_rankings";
-
-        window.getRanking = async () => {
-            const q = query(collection(db, RANKING_COLLECTION), orderBy("score", "asc"), limit(3));
-            const snapshot = await getDocs(q);
-            let result = [];
-            snapshot.forEach(doc => result.push(doc.data()));
-            return result;
-        };
-
-        window.saveRanking = async (name, time) => {
-            await addDoc(collection(db, RANKING_COLLECTION), { 
-                name: name, score: parseFloat(time), createdAt: serverTimestamp() 
-            });
-        };
-    </script>
-    <style>body { margin: 0; overflow: hidden; }</style>
-</head>
-<body>
-<script>
-    const config = {
-        type: Phaser.AUTO, width: 800, height: 600,
-        physics: { default: 'arcade', arcade: { gravity: { y: 1400 }, debug: false } }, 
-        scene: { preload: preload, create: create, update: update }
-    };
-    const game = new Phaser.Game(config);
-
-    function preload() {
-        this.load.image('run', 'Neiro1.png');
-        this.load.image('jump', 'Neiro2.png');
-        this.load.image('background', 'background.png');
-        this.load.image('obs1', 'obstacles1.png');
-        this.load.image('obs2', 'obstacles2.png');
-        this.load.image('obs3', 'obstacles3.png');
-        this.load.image('obs6', 'obstacles6.png');
-        this.load.image('catSleep', 'obstacles4Cat.png');
-        this.load.image('catAngry', 'obstacles5Cat.png');
-        this.load.image('star', 'star.png');
-        this.load.image('timer', 'timer.png');
-        this.load.image('startButton', 'start.png');
-        this.load.image('ytIcon', 'logo.png');
-        this.load.audio('bgm', 'bgm1.mp3');
-    }
-
-    async function create() {
+async function create() {
         this.add.image(400, 300, 'background');
         this.scoreText = this.add.text(16, 16, '回避: 0 / 10', { fontSize: '32px', fill: '#FFF' });
 
@@ -72,48 +7,40 @@
         rankings.forEach((r, i) => rankText += `${i+1}位: ${r.name} - ${r.score}秒\n`);
         this.rankingText = this.add.text(16, 60, rankText, { fontSize: '18px', fill: '#000', backgroundColor: '#fff', padding: 5 });
 
-        // --- プレイヤー生成（createで一度だけ） ---
+        // --- 1. グループを先に作る ---
+        this.obstacles = this.physics.add.group();
+        this.items = this.physics.add.group();
+        this.catTraps = [];
+
+        // --- 2. プレイヤー作成 ---
         this.player = this.physics.add.sprite(150, 400, 'run').setVisible(false);
-        this.player.body.setAllowGravity(true); // ★これ重要！
+        this.player.body.setAllowGravity(true);
         this.ground = this.physics.add.staticGroup().create(400, 610, null).setSize(800, 40).setVisible(false);
         this.physics.add.collider(this.player, this.ground);
 
+        // --- 3. 衝突判定を追加（重要！） ---
+        this.physics.add.collider(this.player, this.obstacles, () => this.resetGame());
+        this.physics.add.overlap(this.player, this.items, (player, item) => {
+            item.destroy();
+            this.bonusTime = (this.bonusTime || 0) + 2000;
+        });
+
+        // --- 4. その他のUI作成 ---
         this.startBtn = this.add.image(400, 350, 'startButton').setInteractive();
         const ytIcon = this.add.image(0, 0, 'ytIcon').setScale(0.15);
         const ytLabel = this.add.text(0, 35, 'YouTubeへ', { fontSize: '20px', fill: '#000', backgroundColor: '#fff', padding: 5 }).setOrigin(0.5);
         this.ytContainer = this.add.container(400, 500, [ytIcon, ytLabel]).setInteractive(new Phaser.Geom.Rectangle(-50, -50, 100, 100), Phaser.Geom.Rectangle.Contains);
         this.ytContainer.on('pointerdown', () => window.open('https://www.youtube.com/channel/UC9tdREypdhZQ9Hemq82r95Q', '_blank'));
 
-// --- アイテム取得の判定 ---
-this.physics.add.overlap(this.player, this.items, (player, item) => {
-    item.destroy(); // アイテムを消す
-    this.bonusTime += 2000; // 2秒ボーナス（例）
-    // 必要ならここでスコアを増やす処理などを追加
-});
-
-// --- 猫トラップの判定 ---
-this.physics.add.overlap(this.player, this.obstacles, (player, obs) => {
-    // 障害物（obs）が猫の場合の特別な処理が必要ならここに書く
-    // 今はとりあえずリセットさせる
-    if (obs.texture.key === 'catSleep' || obs.texture.key === 'catAngry') {
-        this.resetGame();
-    } else {
-        this.resetGame();
-    }
-});
-
-        
+        // --- 5. リセットとスタート関数 ---
         this.resetGame = () => {
             this.gameStarted = false;
             this.avoidCount = 0;
+            this.bonusTime = 0;
             this.scoreText.setText('回避: 0 / 10');
-            
-            // 物理演算を停止させてから位置を固定
             this.player.body.stop(); 
-            this.player.setVisible(false);
-            this.player.body.enable = false;
+            this.player.setVisible(false).body.enable = false;
             this.player.setPosition(150, 400);
-
             this.startBtn.setVisible(true);
             this.ytContainer.setVisible(true);
             this.rankingText.setVisible(true);
@@ -128,12 +55,8 @@ this.physics.add.overlap(this.player, this.obstacles, (player, obs) => {
             this.startBtn.setVisible(false);
             this.ytContainer.setVisible(false);
             this.rankingText.setVisible(false);
-            
-            // プレイヤーを有効化
-            this.player.setVisible(true);
-            this.player.body.enable = true;
+            this.player.setVisible(true).body.enable = true;
             this.player.setPosition(150, 400);
-            
             this.gameStarted = true;
             this.startTime = this.time.now;
             this.sound.play('bgm', { loop: true });
@@ -141,46 +64,6 @@ this.physics.add.overlap(this.player, this.obstacles, (player, obs) => {
 
         this.startBtn.on('pointerdown', startGame);
         this.input.keyboard.on('keydown-ENTER', startGame);
-
-        this.obstacles = this.physics.add.group();
-        this.items = this.physics.add.group();
-        this.catTraps = [];
-        this.physics.add.collider(this.player, this.obstacles, () => this.resetGame());
-        
         this.time.addEvent({ delay: 1500, callback: spawnObstacle, callbackScope: this, loop: true });
         this.cursors = this.input.keyboard.createCursorKeys();
     }
-
-    function spawnObstacle() {
-        if (!this.gameStarted) return;
-        const rand = Math.random();
-        if (rand < 0.3) {
-            let cat = this.obstacles.create(900, 550, 'catSleep').setVelocityX(-750);
-            cat.body.setAllowGravity(false).setSize(cat.width * 0.6, cat.height * 0.6);
-            this.catTraps.push(cat);
-        } else if (rand < 0.5) {
-            this.items.create(900, 100, Math.random() < 0.5 ? 'star' : 'timer').setVelocityX(-750).body.setAllowGravity(false);
-        } else {
-            this.obstacles.create(900, 550, Phaser.Math.RND.pick(['obs1', 'obs2', 'obs3', 'obs6'])).setVelocityX(-750).body.setAllowGravity(false).setSize(50, 50);
-        }
-    }
-
-    function update() {
-        if (!this.gameStarted) return;
-        this.player.setTexture(!this.player.body.touching.down ? 'jump' : 'run');
-        if (this.cursors.up.isDown && this.player.body.touching.down) this.player.setVelocityY(-900);
-        
-        this.obstacles.getChildren().forEach(obs => { if (obs.x < -200) { obs.destroy(); this.avoidCount++; this.scoreText.setText('回避: ' + this.avoidCount + ' / 10'); } });
-
-        if (this.avoidCount >= 10 && this.gameStarted) {
-            this.gameStarted = false;
-            let finalTime = ((this.time.now - this.startTime) / 1000).toFixed(2);
-            this.sound.stopAll();
-            const name = prompt("クリア！ " + finalTime + " 秒！お名前を入力してね！");
-            if (name) window.saveRanking(name, finalTime).then(() => location.reload());
-            else this.resetGame();
-        }
-    }
-</script>
-</body>
-</html>
