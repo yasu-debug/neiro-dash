@@ -91,16 +91,28 @@
         }
 
         // 猫トラップの「右側で発動」処理
-        this.catTraps.forEach((cat) => {
-            // X=700（画面右側）に来た瞬間に爆速発動！
-            if (cat.active && cat.x < 700 && cat.texture.key === 'catSleep') {
-                cat.setTexture('catAngry');
-                cat.body.setAllowGravity(false);
-                cat.setVelocityY(-1500); 
-                cat.setVelocityX(-800); 
-                cat.setCollideWorldBounds(false);
-            }
-        });
+        // 猫トラップの処理部分をこれに置き換えてください
+    this.catTraps.forEach((cat) => {
+        // X=700（画面右側）に来たら発動！
+        if (cat.active && cat.x < 700 && cat.texture.key === 'catSleep') {
+            cat.setTexture('catAngry');
+            cat.body.setAllowGravity(false);
+            
+            // 1. まず垂直に上にだけ飛ばす（X速度は0にする）
+            cat.setVelocityX(0);
+            cat.setVelocityY(-1800); // 垂直上昇スピードを強化！
+            
+            // 2. 0.3秒後に左へ猛スピードで飛ばす
+            this.time.delayedCall(300, () => {
+                if (cat.active) {
+                    cat.setVelocityY(0);    // 上昇を止める
+                    cat.setVelocityX(-1000); // 左へ爆速移動！
+                }
+            });
+            
+            cat.setCollideWorldBounds(false);
+        }
+    });
 
         this.obstacles.getChildren().forEach(obs => {
             if (obs.x < -200) obs.destroy();
