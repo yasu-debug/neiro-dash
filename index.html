@@ -30,9 +30,19 @@
         };
 
         window.saveRanking = async (name, time) => {
-            await addDoc(collection(db, RANKING_COLLECTION), { 
-                name: name, score: parseFloat(time), createdAt: serverTimestamp() 
-            });
+            const q = query(collection(db, RANKING_COLLECTION), orderBy("score", "asc"), limit(3));
+            const snapshot = await getDocs(q);
+            let scores = [];
+            snapshot.forEach(doc => scores.push(doc.data().score));
+
+            if (scores.length < 3 || time < scores[2]) {
+                await addDoc(collection(db, RANKING_COLLECTION), { 
+                    name: name, score: parseFloat(time), createdAt: serverTimestamp() 
+                });
+                alert("おめでとう！ランキング入りしました！");
+            } else {
+                alert("タイム: " + time + " 秒！今回はランク外でした…");
+            }
         };
     </script>
     <style>body { margin: 0; overflow: hidden; }</style>
@@ -74,7 +84,6 @@
 
         this.player = this.physics.add.sprite(150, 400, 'run').setVisible(false);
         this.player.body.enable = false;
-
         this.ground = this.physics.add.staticGroup().create(400, 610, null).setSize(800, 40).setVisible(false);
         this.physics.add.collider(this.player, this.ground);
 
@@ -113,6 +122,7 @@
 
         this.obstacles = this.physics.add.group();
         this.items = this.physics.add.group();
+        this.catTraps = []; // ★ここをしっかり初期化！
         this.physics.add.collider(this.player, this.obstacles, () => this.resetGame());
         
         this.time.addEvent({ delay: 1500, callback: spawnObstacle, callbackScope: this, loop: true });
@@ -138,6 +148,14 @@
         this.player.setTexture(!this.player.body.touching.down ? 'jump' : 'run');
         if (this.cursors.up.isDown && this.player.body.touching.down) this.player.setVelocityY(-900);
         
+        this.catTraps.forEach(cat => {
+            if (cat.active && cat.x < 700 && cat.texture.key === 'catSleep') {
+                cat.setTexture('catAngry');
+                cat.setVelocityY(-1500); 
+                this.time.delayedCall(300, () => { if(cat.active) { cat.setVelocityY(0); cat.setVelocityX(-800); }});
+            }
+        });
+
         this.obstacles.getChildren().forEach(obs => { if (obs.x < -200) { obs.destroy(); this.avoidCount++; this.scoreText.setText('回避: ' + this.avoidCount + ' / 10'); } });
 
         if (this.avoidCount >= 10 && this.gameStarted) {
