@@ -92,10 +92,16 @@
         this.catTraps = [];
         this.physics.add.collider(this.player, this.obstacles, () => this.resetGame());
 
-        this.resetGame = () => {
+this.resetGame = () => {
             this.gameStarted = false;
             this.avoidCount = 0;
             this.scoreText.setText('回避: 0 / 10');
+            
+            // --- ここを追加してね ---
+            this.player.setVelocity(0, 0); // 速度をゼロにする！
+            this.player.setPosition(150, 400); // 位置も確実に戻す
+            // -----------------------
+
             this.player.setVisible(false).body.enable = false;
             this.startBtn.setVisible(true);
             this.ytContainer.setVisible(true);
