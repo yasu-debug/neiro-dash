@@ -11,7 +11,10 @@
     const config = {
         type: Phaser.AUTO,
         width: 800, height: 600,
-        physics: { default: 'arcade', arcade: { gravity: { y: 800 }, debug: false } }, 
+        physics: { 
+            default: 'arcade', 
+            arcade: { gravity: { y: 1000 }, debug: false } // 重力を少し強くしました
+        }, 
         scene: { preload: preload, create: create, update: update }
     };
     const game = new Phaser.Game(config);
@@ -20,7 +23,6 @@
         this.load.image('run', 'Neiro1.png');
         this.load.image('jump', 'Neiro2.png');
         this.load.image('background', 'background.png');
-        // 障害物の読み込み
         this.load.image('obs1', 'obstacles1.png');
         this.load.image('obs2', 'obstacles2.png');
         this.load.image('obs3', 'obstacles3.png');
@@ -28,54 +30,54 @@
     }
 
     function create() {
+        // 背景を表示
         this.add.image(400, 300, 'background');
 
-        this.platforms = this.physics.add.staticGroup();
-        let ground = this.add.rectangle(400, 580, 800, 40, 0x000000, 0); 
-        this.physics.add.existing(ground, true);
-        this.platforms.add(ground);
+        // 地面：透明な壁を作ってプレイヤーを支えます
+        this.ground = this.physics.add.staticGroup();
+        this.ground.create(400, 580, null).setSize(800, 40).setVisible(false);
 
-        this.player = this.physics.add.sprite(100, 450, 'run');
+        // プレイヤー
+        this.player = this.physics.add.sprite(150, 450, 'run');
         this.player.setCollideWorldBounds(true);
-        this.physics.add.collider(this.player, this.platforms);
+        this.physics.add.collider(this.player, this.ground);
 
-        // 障害物を管理するグループ
+        // 障害物グループ
         this.obstacles = this.physics.add.group();
+        this.physics.add.collider(this.obstacles, this.ground); // 障害物も地面に乗せる
         
-        // プレイヤーと障害物がぶつかったらゲームオーバー（今回は停止するだけ）
-        this.physics.add.collider(this.player, this.obstacles, () => {
-            this.scene.pause(); // ぶつかったらゲームを止める
-            alert("ぶつかっちゃった！");
+        // プレイヤーと障害物がぶつかったらゲームオーバー
+        this.physics.add.overlap(this.player, this.obstacles, () => {
+            this.scene.restart(); // ぶつかったらリスタート！
         });
 
-        // 障害物を定期的に出すタイマー（2秒ごとに発生）
+        // 障害物を生成するタイマー
         this.time.addEvent({
-            delay: 2000,
-            callback: spawnObstacle,
-            callbackScope: this,
+            delay: 1500,
+            callback: () => {
+                const obsList = ['obs1', 'obs2', 'obs3', 'obs6'];
+                const key = Phaser.Math.RND.pick(obsList);
+                let obs = this.obstacles.create(850, 500, key);
+                obs.setVelocityX(-400); // 左へ移動
+                obs.body.setAllowGravity(false); // 障害物は重力の影響を受けないようにする
+            },
             loop: true
         });
 
         this.cursors = this.input.keyboard.createCursorKeys();
     }
 
-    function spawnObstacle() {
-        // 4種類の画像からランダムに選ぶ
-        const obsList = ['obs1', 'obs2', 'obs3', 'obs6'];
-        const randomObs = Phaser.Math.RND.pick(obsList);
-        
-        // 画面右端から出現
-        let obs = this.obstacles.create(850, 530, randomObs);
-        obs.setVelocityX(-300); // 左へ流れるスピード
-        obs.setCollideWorldBounds(false);
-    }
-
     function update() {
-        if (!this.player.body.touching.down) this.player.setTexture('jump');
-        else this.player.setTexture('run');
+        // ジャンプ中か走っているかの画像切り替え
+        if (!this.player.body.touching.down) {
+            this.player.setTexture('jump');
+        } else {
+            this.player.setTexture('run');
+        }
 
+        // ジャンプの処理
         if (this.cursors.up.isDown && this.player.body.touching.down) {
-            this.player.setVelocityY(-500);
+            this.player.setVelocityY(-600);
         }
     }
 </script>
