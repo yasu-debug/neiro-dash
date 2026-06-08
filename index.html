@@ -43,24 +43,20 @@
         this.items = this.physics.add.group();
         
         this.physics.add.collider(this.player, this.obstacles, () => {
-            this.consecutiveAvoids = 0;
             this.scene.restart();
         });
         
         this.physics.add.overlap(this.player, this.items, (player, item) => {
             if (item.texture.key === 'star') {
                 this.avoidCount += 2;
-                this.consecutiveAvoids = 0;
             } else if (item.texture.key === 'timer') {
                 this.bonusTime += 2000;
-                this.consecutiveAvoids = 0;
             }
             item.destroy();
             this.scoreText.setText('回避: ' + this.avoidCount + ' / 10');
         });
 
         this.avoidCount = 0;
-        this.consecutiveAvoids = 0;
         this.startTime = this.time.now;
         this.bonusTime = 0;
         this.scoreText = this.add.text(16, 16, '回避: 0 / 10', { fontSize: '32px', fill: '#FFF' });
@@ -73,47 +69,39 @@
     }
 
     function spawnObstacle() {
-        const speed = -800;
         const rand = Math.random();
 
-        // 猫トラップ（30%）
+        // 1. 猫トラップ（30%）
         if (rand < 0.3) { 
             let cat = this.obstacles.create(900, 550, 'catSleep');
-            cat.setVelocityX(speed);
+            cat.setVelocityX(-800);
             cat.body.setAllowGravity(false);
             this.catTraps.push(cat);
         } 
-        // アイテム出現枠（30% -> 合計60%）
-        else if (rand < 0.6) {
+        // 2. アイテム（20%：スターかタイマーがランダムに！）
+        else if (rand < 0.5) {
             let isStar = Math.random() < 0.5;
-            
-            // スターは6回連続回避で「強制解禁」にする
-            if (isStar && this.consecutiveAvoids < 6) {
-                isStar = false; // 無理ならタイマーを出す
-            }
-
             let item = this.items.create(900, 100, isStar ? 'star' : 'timer');
-            item.setVelocityX(isStar ? -400 : -800); // スターはゆっくり
+            item.setVelocityX(-600); // 少しだけスピードを落としました
             item.body.setAllowGravity(false);
             this.itemsMoving.push(item);
         } 
-        // 通常障害物（残り40%）
+        // 3. 通常障害物（残り50%）
         else {
             let obs = this.obstacles.create(900, 550, Phaser.Math.RND.pick(['obs1', 'obs2', 'obs3', 'obs6']));
-            obs.setVelocityX(speed);
+            obs.setVelocityX(-800);
             obs.body.setAllowGravity(false);
         }
     }
 
     function update() {
         this.player.setTexture(!this.player.body.touching.down ? 'jump' : 'run');
-        if (this.cursors.up.isDown && this.player.body.touching.down) this.player.setVelocityY(-1200);
+        if (this.cursors.up.isDown && this.player.body.touching.down) this.player.setVelocityY(-900);
 
-        // スターの落下処理
+        // スターの落下処理（スターなら確率で落下するように変更）
         this.itemsMoving.forEach(i => {
             if(i.active && i.texture.key === 'star' && i.x < 420 && i.x > 380 && i.y < 200) {
-                i.y = 450; // 下に瞬間移動
-                i.setVelocityY(0); // 落下後は水平移動を維持
+                if(Math.random() < 0.7) i.y = 450; 
             }
         });
 
@@ -121,8 +109,8 @@
         this.catTraps.forEach(cat => {
             if (cat.active && cat.x < 700 && cat.texture.key === 'catSleep') {
                 cat.setTexture('catAngry');
-                cat.setVelocityY(-1800);
-                this.time.delayedCall(300, () => { if(cat.active) { cat.setVelocityY(0); cat.setVelocityX(-1000); }});
+                cat.setVelocityY(-1500);
+                this.time.delayedCall(300, () => { if(cat.active) { cat.setVelocityY(0); cat.setVelocityX(-900); }});
             }
         });
 
@@ -130,7 +118,6 @@
             if (obs.x < -200) {
                 obs.destroy();
                 this.avoidCount++;
-                this.consecutiveAvoids++;
                 this.scoreText.setText('回避: ' + this.avoidCount + ' / 10');
             }
         });
