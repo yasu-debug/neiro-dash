@@ -108,4 +108,86 @@
         this.startBtn = this.add.image(400, 350, 'startButton').setInteractive();
         const ytIcon = this.add.image(0, 0, 'ytIcon').setScale(0.15);
         const ytLabel = this.add.text(0, 35, 'YouTubeへ', { fontSize: '20px', fill: '#000', backgroundColor: '#fff', padding: 5 }).setOrigin(0.5);
-        this.ytContainer = this.add.container(400, 500, [ytIcon
+        this.ytContainer = this.add.container(400, 500, [ytIcon, ytLabel]).setInteractive(new Phaser.Geom.Rectangle(-50, -50, 100, 100), Phaser.Geom.Rectangle.Contains);
+        this.ytContainer.on('pointerdown', () => window.open('https://www.youtube.com/channel/UC9tdREypdhZQ9Hemq82r95Q', '_blank'));
+
+        this.resetGame = () => {
+            this.gameStarted = false;
+            this.avoidCount = 0;
+            this.bonusTime = 0;
+            this.scoreText.setText('回避: 0 / 10');
+            this.timerText.setText('0.00秒');
+            this.player.body.stop(); 
+            this.player.setVisible(false).body.enable = false;
+            this.player.setPosition(150, 400);
+            this.startBtn.setVisible(true);
+            this.ytContainer.setVisible(true);
+            this.rankingText.setVisible(true);
+            this.obstacles.clear(true, true);
+            this.items.clear(true, true);
+            this.catTraps = [];
+            this.sound.stopAll();
+        };
+
+        const startGame = () => {
+            if (this.gameStarted) return;
+            this.startBtn.setVisible(false);
+            this.ytContainer.setVisible(false);
+            this.rankingText.setVisible(false);
+            this.player.setVisible(true).body.enable = true;
+            this.player.setPosition(150, 400);
+            this.gameStarted = true;
+            this.startTime = this.time.now;
+            this.bonusTime = 0;
+            this.sound.play('bgm', { loop: true });
+        };
+
+        this.startBtn.on('pointerdown', startGame);
+        this.input.keyboard.on('keydown-ENTER', startGame);
+
+        this.time.addEvent({ delay: 1500, callback: spawnObstacle, callbackScope: this, loop: true });
+        this.cursors = this.input.keyboard.createCursorKeys();
+    }
+
+    function spawnObstacle() {
+        if (!this.gameStarted) return;
+        const rand = Math.random();
+        if (rand < 0.3) {
+            let cat = this.obstacles.create(900, 550, 'catSleep').setVelocityX(-750);
+            cat.body.setAllowGravity(false).setSize(cat.width * 0.6, cat.height * 0.6);
+            this.catTraps.push(cat);
+        } else if (rand < 0.5) {
+            this.items.create(900, 100, Math.random() < 0.5 ? 'star' : 'timer').setVelocityX(-750).body.setAllowGravity(false);
+        } else {
+            this.obstacles.create(900, 550, Phaser.Math.RND.pick(['obs1', 'obs2', 'obs3', 'obs6'])).setVelocityX(-750).body.setAllowGravity(false).setSize(50, 50);
+        }
+    }
+
+    function update() {
+        if (!this.gameStarted) return;
+        
+        this.player.setTexture(!this.player.body.touching.down ? 'jump' : 'run');
+        if (this.cursors.up.isDown && this.player.body.touching.down) this.player.setVelocityY(-900);
+        
+        this.catTraps.forEach(cat => {
+            if (cat.active && cat.x < 700 && cat.texture.key === 'catSleep') {
+                cat.setTexture('catAngry');
+                cat.setVelocityY(-1500); 
+                this.time.delayedCall(300, () => { if(cat.active) { cat.setVelocityY(0); cat.setVelocityX(-800); }});
+            }
+        });
+
+        this.obstacles.getChildren().forEach(obs => { if (obs.x < -200) { obs.destroy(); this.avoidCount++; this.scoreText.setText('回避: ' + this.avoidCount + ' / 10'); } });
+
+        if (this.avoidCount >= 10 && this.gameStarted) {
+            this.gameStarted = false;
+            let finalTime = ((this.time.now - this.startTime - (this.bonusTime || 0)) / 1000).toFixed(2);
+            this.sound.stopAll();
+            const name = prompt("クリア！ " + Math.max(0, finalTime) + " 秒！お名前を入力してね！");
+            if (name) window.saveRanking(name, Math.max(0, finalTime)).then(() => location.reload());
+            else this.resetGame();
+        }
+    }
+</script>
+</body>
+</html>
