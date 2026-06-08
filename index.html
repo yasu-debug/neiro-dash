@@ -2,72 +2,32 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>ねいろのダッシュ！</title>
+    <title>テスト用画面</title>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
-    <style>body { margin: 0; }</style>
 </head>
 <body>
 <script>
     const config = {
         type: Phaser.AUTO,
         width: 800, height: 600,
-        // ここを修正！デバッグをfalseにして、緑色の枠を消しました
-        physics: { default: 'arcade', arcade: { gravity: { y: 800 }, debug: false } }, 
-        scene: { preload: preload, create: create, update: update }
+        physics: { default: 'arcade', arcade: { gravity: { y: 800 } } },
+        scene: { create: create }
     };
-    const game = new Phaser.Game(config);
-
-    function preload() {
-        // ここが一番重要！欠けていた画像の読み込みを復活させました！
-        // これがないと、ねいろちゃんが存在しません。
-        this.load.image('run', 'Neiro1.png');
-        this.load.image('jump', 'Neiro2.png');
-        this.load.image('goal', 'Neiro3.png');
-        // もし背景があるならここに追加：this.load.image('background', 'background.png');
-    }
+    new Phaser.Game(config);
 
     function create() {
-        // 背景があれば表示（createの最初に書くのがポイント！）
-        // this.add.image(400, 300, 'background');
-
-        // 地面を作成（当たり判定のみの透明な地面を確実に作成）
-        this.platforms = this.physics.add.staticGroup();
-        let ground = this.add.rectangle(400, 580, 800, 40, 0x000000, 0); 
+        // 画像を使わず、赤い四角形をプレイヤーとして表示します
+        this.player = this.add.rectangle(400, 300, 50, 50, 0xff0000);
+        this.physics.add.existing(this.player);
+        this.player.body.setCollideWorldBounds(true);
+        
+        // 地面（青い四角形）
+        let ground = this.add.rectangle(400, 580, 800, 40, 0x0000ff);
         this.physics.add.existing(ground, true);
-        this.platforms.add(ground);
-
-        // プレイヤー作成
-        this.player = this.physics.add.sprite(400, 300, 'run');
-        this.player.setCollideWorldBounds(true);
-        this.player.setBounce(0.2);
-
-        // プレイヤーと地面を衝突させる
-        this.physics.add.collider(this.player, this.platforms);
-
-        this.cursors = this.input.keyboard.createCursorKeys();
-    }
-
-    function update() {
-        // 画像の切り替え：地面に触れているかで判断
-        if (!this.player.body.touching.down) {
-            this.player.setTexture('jump');
-        } else {
-            this.player.setTexture('run');
-        }
-
-        // 左右の移動
-        if (this.cursors.left.isDown) {
-            this.player.setVelocityX(-200);
-        } else if (this.cursors.right.isDown) {
-            this.player.setVelocityX(200);
-        } else {
-            this.player.setVelocityX(0);
-        }
-
-        // ジャンプの処理
-        if (this.cursors.up.isDown && this.player.body.touching.down) {
-            this.player.setVelocityY(-500);
-        }
+        this.physics.add.collider(this.player, ground);
+        
+        // メッセージを表示
+        this.add.text(10, 10, '赤と青の四角形が見えたら、Phaserは正常です！', { fill: '#ffffff' });
     }
 </script>
 </body>
