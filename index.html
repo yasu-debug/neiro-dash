@@ -73,27 +73,34 @@
     }
 
     function spawnObstacle() {
+        const speed = -800;
         const rand = Math.random();
-        
-        // --- 条件分岐で出現を制限 ---
-        if (rand < 0.3) { // 猫トラップ
+
+        // 猫トラップ（30%）
+        if (rand < 0.3) { 
             let cat = this.obstacles.create(900, 550, 'catSleep');
-            cat.setVelocityX(-800);
+            cat.setVelocityX(speed);
             cat.body.setAllowGravity(false);
             this.catTraps.push(cat);
-        } else if (rand < 0.45) { // アイテム出現
+        } 
+        // アイテム出現枠（30% -> 合計60%）
+        else if (rand < 0.6) {
             let isStar = Math.random() < 0.5;
-            // タイマーは制限なし、スターは回避6以上で出現
-            if (isStar && this.consecutiveAvoids < 6) return; 
+            
+            // スターは6回連続回避で「強制解禁」にする
+            if (isStar && this.consecutiveAvoids < 6) {
+                isStar = false; // 無理ならタイマーを出す
+            }
 
             let item = this.items.create(900, 100, isStar ? 'star' : 'timer');
-            // スターだけスピードを半分(-400)にする
-            item.setVelocityX(isStar ? -400 : -800);
+            item.setVelocityX(isStar ? -400 : -800); // スターはゆっくり
             item.body.setAllowGravity(false);
             this.itemsMoving.push(item);
-        } else { // 通常障害物
+        } 
+        // 通常障害物（残り40%）
+        else {
             let obs = this.obstacles.create(900, 550, Phaser.Math.RND.pick(['obs1', 'obs2', 'obs3', 'obs6']));
-            obs.setVelocityX(-800);
+            obs.setVelocityX(speed);
             obs.body.setAllowGravity(false);
         }
     }
