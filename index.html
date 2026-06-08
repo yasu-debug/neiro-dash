@@ -27,7 +27,6 @@
         this.load.image('obs2', 'obstacles2.png');
         this.load.image('obs3', 'obstacles3.png');
         this.load.image('obs6', 'obstacles6.png');
-        // 猫トラップ用画像の読み込み
         this.load.image('catSleep', 'obstacles4Cat.png');
         this.load.image('catAngry', 'obstacles5Cat.png');
     }
@@ -43,13 +42,10 @@
         this.physics.add.collider(this.player, this.ground);
 
         this.obstacles = this.physics.add.group();
-        
-        // 衝突したらリスタート
         this.physics.add.collider(this.player, this.obstacles, () => {
             this.scene.restart();
         });
 
-        // 猫トラップを追跡するためのリスト
         this.catTraps = [];
 
         this.time.addEvent({
@@ -63,19 +59,20 @@
     }
 
     function spawnObstacle() {
-        // 33%の確率で猫トラップを出現させる
+        // スピードを -600 に強化
+        const speed = -600; 
+
         if (Math.random() < 0.33) {
             let cat = this.obstacles.create(900, 550, 'catSleep');
-            cat.setVelocityX(-450);
+            cat.setVelocityX(speed);
             cat.body.setAllowGravity(false);
-            // 判定を調整
             cat.body.setSize(cat.width * 0.5, cat.height * 0.7);
-            this.catTraps.push(cat); // 監視リストに追加
+            this.catTraps.push(cat);
         } else {
             const obsList = ['obs1', 'obs2', 'obs3', 'obs6'];
             let key = Phaser.Math.RND.pick(obsList);
             let obs = this.obstacles.create(900, 550, key);
-            obs.setVelocityX(-450); 
+            obs.setVelocityX(speed); 
             obs.body.setAllowGravity(false);
             obs.body.setSize(obs.width * 0.5, obs.height * 0.7);
             obs.body.setOffset(obs.width * 0.25, obs.height * 0.15);
@@ -83,42 +80,32 @@
     }
 
     function update() {
-    // 既存の画像切り替え処理
-    if (!this.player.body.touching.down) {
-        this.player.setTexture('jump');
-    } else {
-        this.player.setTexture('run');
-    }
-
-    // ジャンプ処理
-    if (this.cursors.up.isDown && this.player.body.touching.down) {
-        this.player.setVelocityY(-1200); 
-    }
-
-    // 猫トラップの「急上昇＆高速移動」処理
-    this.catTraps.forEach((cat) => {
-        // 画面中央少し右（X=500）に来たら発動！
-        if (cat.active && cat.x < 500 && cat.texture.key === 'catSleep') {
-            cat.setTexture('catAngry');
-            
-            // 垂直に天井まで爆速上昇！
-            // Y軸の速度をマイナスにして上に飛ばし、重力を無効化します
-            cat.body.setAllowGravity(false);
-            cat.setVelocityY(-1500); // 垂直上昇のスピード
-            cat.setVelocityX(-800);  // 画面外へ消える猛スピード
-            
-            // 天井（Y=0）に達したら上に突き抜けて消えるようにする
-            cat.setCollideWorldBounds(false);
+        if (!this.player.body.touching.down) {
+            this.player.setTexture('jump');
+        } else {
+            this.player.setTexture('run');
         }
-    });
 
-    // 画面外の障害物削除
-    this.obstacles.getChildren().forEach(obs => {
-        if (obs.x < -200) {
-            obs.destroy();
+        if (this.cursors.up.isDown && this.player.body.touching.down) {
+            this.player.setVelocityY(-1200); 
         }
-    });
-}
+
+        // 猫トラップの「右側で発動」処理
+        this.catTraps.forEach((cat) => {
+            // X=700（画面右側）に来た瞬間に爆速発動！
+            if (cat.active && cat.x < 700 && cat.texture.key === 'catSleep') {
+                cat.setTexture('catAngry');
+                cat.body.setAllowGravity(false);
+                cat.setVelocityY(-1500); 
+                cat.setVelocityX(-800); 
+                cat.setCollideWorldBounds(false);
+            }
+        });
+
+        this.obstacles.getChildren().forEach(obs => {
+            if (obs.x < -200) obs.destroy();
+        });
+    }
 </script>
 </body>
 </html>
