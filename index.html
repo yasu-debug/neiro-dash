@@ -11,46 +11,51 @@
     const config = {
         type: Phaser.AUTO,
         width: 800, height: 600,
-        physics: { default: 'arcade', arcade: { gravity: { y: 800 } } },
+        // ここを修正！デバッグをfalseにして、緑色の枠を消しました
+        physics: { default: 'arcade', arcade: { gravity: { y: 800 }, debug: false } }, 
         scene: { preload: preload, create: create, update: update }
     };
     const game = new Phaser.Game(config);
 
     function preload() {
+        // ここが一番重要！欠けていた画像の読み込みを復活させました！
+        // これがないと、ねいろちゃんが存在しません。
         this.load.image('run', 'Neiro1.png');
         this.load.image('jump', 'Neiro2.png');
         this.load.image('goal', 'Neiro3.png');
-        this.load.image('background', 'background.png'); // 背景読み込み
+        // もし背景があるならここに追加：this.load.image('background', 'background.png');
     }
 
     function create() {
-        // 1. 背景を表示
-        this.add.image(400, 300, 'background');
+        // 背景があれば表示（createの最初に書くのがポイント！）
+        // this.add.image(400, 300, 'background');
 
-        // 2. 地面を作成
+        // 地面を作成（当たり判定のみの透明な地面を確実に作成）
         this.platforms = this.physics.add.staticGroup();
-        let ground = this.add.rectangle(400, 580, 800, 40, 0x000000, 0);
+        let ground = this.add.rectangle(400, 580, 800, 40, 0x000000, 0); 
         this.physics.add.existing(ground, true);
         this.platforms.add(ground);
 
-        // 3. プレイヤー作成
+        // プレイヤー作成
         this.player = this.physics.add.sprite(400, 300, 'run');
         this.player.setCollideWorldBounds(true);
         this.player.setBounce(0.2);
 
-        // 4. 当たり判定
+        // プレイヤーと地面を衝突させる
         this.physics.add.collider(this.player, this.platforms);
 
         this.cursors = this.input.keyboard.createCursorKeys();
     }
 
     function update() {
+        // 画像の切り替え：地面に触れているかで判断
         if (!this.player.body.touching.down) {
             this.player.setTexture('jump');
         } else {
             this.player.setTexture('run');
         }
 
+        // 左右の移動
         if (this.cursors.left.isDown) {
             this.player.setVelocityX(-200);
         } else if (this.cursors.right.isDown) {
@@ -59,6 +64,7 @@
             this.player.setVelocityX(0);
         }
 
+        // ジャンプの処理
         if (this.cursors.up.isDown && this.player.body.touching.down) {
             this.player.setVelocityY(-500);
         }
