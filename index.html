@@ -6,7 +6,6 @@
     <title>ねいろのダッシュ！</title>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
     <script type="module">
-        // (Firebase部分は以前のものと同じです)
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
         import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
         
@@ -71,7 +70,6 @@
         this.scoreText = this.add.text(16, 16, '回避: 0 / 10', { fontSize: '32px', fill: '#FFF' });
         this.timerText = this.add.text(780, 16, '0.00秒', { fontSize: '32px', fill: '#FFF' }).setOrigin(1, 0);
 
-        // タイマー更新処理
         this.time.addEvent({ delay: 100, callback: () => {
             if (this.gameStarted) {
                 let currentTime = ((this.time.now - this.startTime - (this.bonusTime || 0)) / 1000).toFixed(2);
@@ -82,7 +80,7 @@
         this.obstacles = this.physics.add.group();
         this.items = this.physics.add.group();
         this.catTraps = [];
-        this.avoidCount = 0; // 初期化
+        this.avoidCount = 0;
 
         this.player = this.physics.add.sprite(150, 400, 'run').setVisible(false);
         this.player.body.setAllowGravity(true);
@@ -102,7 +100,6 @@
 
         this.startBtn = this.add.image(400, 350, 'startButton').setInteractive();
 
-        // 共通スタート関数
         const startGame = () => {
             if (this.gameStarted) return;
             this.startBtn.setVisible(false);
@@ -116,8 +113,11 @@
             this.sound.play('bgm', { loop: true });
         };
 
+        // イベント設定：スタート
         this.startBtn.on('pointerdown', startGame);
         this.input.keyboard.on('keydown-ENTER', startGame);
+
+        // イベント設定：ジャンプ（スタートボタン以外をタップした時）
         this.input.on('pointerdown', (pointer) => {
             if (this.gameStarted && this.player.body.touching.down) {
                 this.player.setVelocityY(-900);
