@@ -11,7 +11,6 @@
     const config = {
         type: Phaser.AUTO,
         width: 800, height: 600,
-        // デバッグをオフにして、頭の緑色枠を消しました
         physics: { default: 'arcade', arcade: { gravity: { y: 800 }, debug: false } }, 
         scene: { preload: preload, create: create, update: update }
     };
@@ -20,46 +19,64 @@
     function preload() {
         this.load.image('run', 'Neiro1.png');
         this.load.image('jump', 'Neiro2.png');
-        this.load.image('goal', 'Neiro3.png');
-        
-        // ★ここを修正！欠けていた背景画像の読み込みを追加しました！
-        // ファイル名はGitHubのファイルリストと一致する「background.png」です。
-        this.load.image('background', 'background.png'); 
+        this.load.image('background', 'background.png');
+        // 障害物の読み込み
+        this.load.image('obs1', 'obstacles1.png');
+        this.load.image('obs2', 'obstacles2.png');
+        this.load.image('obs3', 'obstacles3.png');
+        this.load.image('obs6', 'obstacles6.png');
     }
 
     function create() {
-        // ★背景を一番最初に表示 (これで他のキャラより後ろになります)
         this.add.image(400, 300, 'background');
 
-        // 地面
         this.platforms = this.physics.add.staticGroup();
         let ground = this.add.rectangle(400, 580, 800, 40, 0x000000, 0); 
         this.physics.add.existing(ground, true);
         this.platforms.add(ground);
 
-        // プレイヤー
-        this.player = this.physics.add.sprite(400, 300, 'run');
+        this.player = this.physics.add.sprite(100, 450, 'run');
         this.player.setCollideWorldBounds(true);
-        this.player.setBounce(0.2);
-
-        // 当たり判定
         this.physics.add.collider(this.player, this.platforms);
+
+        // 障害物を管理するグループ
+        this.obstacles = this.physics.add.group();
+        
+        // プレイヤーと障害物がぶつかったらゲームオーバー（今回は停止するだけ）
+        this.physics.add.collider(this.player, this.obstacles, () => {
+            this.scene.pause(); // ぶつかったらゲームを止める
+            alert("ぶつかっちゃった！");
+        });
+
+        // 障害物を定期的に出すタイマー（2秒ごとに発生）
+        this.time.addEvent({
+            delay: 2000,
+            callback: spawnObstacle,
+            callbackScope: this,
+            loop: true
+        });
 
         this.cursors = this.input.keyboard.createCursorKeys();
     }
 
+    function spawnObstacle() {
+        // 4種類の画像からランダムに選ぶ
+        const obsList = ['obs1', 'obs2', 'obs3', 'obs6'];
+        const randomObs = Phaser.Math.RND.pick(obsList);
+        
+        // 画面右端から出現
+        let obs = this.obstacles.create(850, 530, randomObs);
+        obs.setVelocityX(-300); // 左へ流れるスピード
+        obs.setCollideWorldBounds(false);
+    }
+
     function update() {
-        if (!this.player.body.touching.down) {
-            this.player.setTexture('jump');
-        } else {
-            this.player.setTexture('run');
+        if (!this.player.body.touching.down) this.player.setTexture('jump');
+        else this.player.setTexture('run');
+
+        if (this.cursors.up.isDown && this.player.body.touching.down) {
+            this.player.setVelocityY(-500);
         }
-
-        if (this.cursors.left.isDown) this.player.setVelocityX(-200);
-        else if (this.cursors.right.isDown) this.player.setVelocityX(200);
-        else this.player.setVelocityX(0);
-
-        if (this.cursors.up.isDown && this.player.body.touching.down) this.player.setVelocityY(-500);
     }
 </script>
 </body>
