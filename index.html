@@ -69,11 +69,11 @@
         this.add.image(400, 300, 'background');
         
         // タイトル
-        this.add.text(400, 160, 'ねいろのダッシュ！', { 
-    fontSize: '56px', // 64px から 56px に少しだけ縮小
+this.add.text(400, 170, 'ねいろのダッシュ！', { 
+    fontSize: '52px', 
     fill: '#FFB6C1', 
     stroke: '#FFF', 
-    strokeThickness: 6, // 縁取りも少しだけスリムに
+    strokeThickness: 6, 
     fontStyle: 'bold' 
 }).setOrigin(0.5);
 
@@ -86,7 +86,7 @@
         let rankStr = "【ランキング TOP3】\n";
         rankings.forEach((r, i) => rankStr += `${i+1}位: ${r.name} - ${r.score}秒\n`);
         // ランキング表示も少し下に下げて間隔を確保
-this.rankDisplay = this.add.text(400, 310, rankStr, { 
+this.rankDisplay = this.add.text(400, 280, rankStr, { 
     fontSize: '24px', 
     fill: '#000', 
     backgroundColor: '#fff', 
