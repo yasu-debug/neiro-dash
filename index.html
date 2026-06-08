@@ -29,7 +29,6 @@
         this.load.image('star', 'star.png');
         this.load.image('timer', 'timer.png');
         this.load.image('startButton', 'start.png');
-        // BGMを読み込む
         this.load.audio('bgm', 'bgm1.mp3');
     }
 
@@ -47,7 +46,7 @@
         this.ground.create(400, 610, null).setSize(800, 40).setVisible(false);
         this.physics.add.collider(this.player, this.ground);
 
-        // --- スタート処理の関数 ---
+        // --- スタート処理 ---
         const startGame = () => {
             if (this.gameStarted) return;
             this.startBtn.setVisible(false);
@@ -56,22 +55,26 @@
             this.player.body.setSize(this.player.width * 0.7, this.player.height * 0.8);
             this.gameStarted = true;
             this.startTime = this.time.now;
-            // BGMを再生（ループ設定）
-            this.sound.play('bgm', { loop: true });
+            
+            // BGMが再生されていない場合のみ再生
+            if (!this.sound.get('bgm') || !this.sound.get('bgm').isPlaying) {
+                this.sound.play('bgm', { loop: true });
+            }
         };
 
-        // ボタン配置とクリック設定
         this.startBtn = this.add.image(400, 350, 'startButton').setInteractive();
         this.startBtn.on('pointerdown', startGame);
-        
-        // エンターキーの設定
         this.enterKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
         this.enterKey.on('down', startGame);
 
         // 障害物・アイテム判定
         this.obstacles = this.physics.add.group();
         this.items = this.physics.add.group();
-        this.physics.add.collider(this.player, this.obstacles, () => this.scene.restart());
+        this.physics.add.collider(this.player, this.obstacles, () => {
+            this.sound.stopAll(); // 衝突時も音を止める
+            this.scene.restart();
+        });
+        
         this.physics.add.overlap(this.player, this.items, (player, item) => {
             if (item.texture.key === 'star') this.avoidCount += 2;
             else if (item.texture.key === 'timer') this.bonusTime += 2000;
@@ -134,9 +137,8 @@
 
         if (this.avoidCount >= 10) {
             let finalTime = ((this.time.now - this.startTime - this.bonusTime) / 1000).toFixed(2);
-            alert("クリア！タイム: " + finalTime + " 秒");
-            // リスタート時に音を止める処理を追加するとさらに良いですよ！
             this.sound.stopAll();
+            alert("クリア！タイム: " + finalTime + " 秒");
             this.scene.restart();
         }
     }
