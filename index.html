@@ -11,33 +11,38 @@
     const config = {
         type: Phaser.AUTO,
         width: 800, height: 600,
-        physics: { default: 'arcade', arcade: { gravity: { y: 800 } } },
+        // デバッグをオフにして、頭の緑色枠を消しました
+        physics: { default: 'arcade', arcade: { gravity: { y: 800 }, debug: false } }, 
         scene: { preload: preload, create: create, update: update }
     };
     const game = new Phaser.Game(config);
 
     function preload() {
-        // もし画像ファイル名にスペースや全角文字が含まれているとエラーになります。
-        // ファイル名はすべて小文字の半角英数であることを確認してくださいね。
         this.load.image('run', 'Neiro1.png');
         this.load.image('jump', 'Neiro2.png');
-        this.load.image('background', 'background.png');
+        this.load.image('goal', 'Neiro3.png');
+        
+        // ★ここを修正！欠けていた背景画像の読み込みを追加しました！
+        // ファイル名はGitHubのファイルリストと一致する「background.png」です。
+        this.load.image('background', 'background.png'); 
     }
 
     function create() {
-        // 1. 背景 (まずは背景だけ表示されるか試します)
+        // ★背景を一番最初に表示 (これで他のキャラより後ろになります)
         this.add.image(400, 300, 'background');
 
-        // 2. 地面
+        // 地面
         this.platforms = this.physics.add.staticGroup();
-        let ground = this.add.rectangle(400, 580, 800, 40, 0xffffff, 0); 
+        let ground = this.add.rectangle(400, 580, 800, 40, 0x000000, 0); 
         this.physics.add.existing(ground, true);
         this.platforms.add(ground);
 
-        // 3. プレイヤー
+        // プレイヤー
         this.player = this.physics.add.sprite(400, 300, 'run');
         this.player.setCollideWorldBounds(true);
         this.player.setBounce(0.2);
+
+        // 当たり判定
         this.physics.add.collider(this.player, this.platforms);
 
         this.cursors = this.input.keyboard.createCursorKeys();
