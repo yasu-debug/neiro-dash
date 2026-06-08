@@ -36,15 +36,15 @@
         this.gameStarted = false;
 
         // --- スタート画面 ---
-        // ねいろちゃんは1人のみ！
+        // ここを「たった1行」だけにしました！
         this.titleNeiro = this.add.image(400, 450, 'run').setScale(1.2);
         
-        // 星の下（Y=350）にスタートボタンを配置
+        // 星の下にスタートボタン
         this.startBtn = this.add.image(400, 350, 'startButton').setInteractive();
         
         // ボタンをクリックでゲームスタート
         this.startBtn.on('pointerdown', () => {
-            this.titleNeiro.destroy();
+            this.titleNeiro.destroy(); // 1人だけ消す
             this.startBtn.destroy();
             this.gameStarted = true;
             this.startTime = this.time.now;
