@@ -96,11 +96,18 @@
         if (this.cursors.up.isDown && this.player.body.touching.down) this.player.setVelocityY(-900);
 
         // 猫処理もスピード調整
+        // 猫処理（ジャンプ力をアップ！）
         this.catTraps.forEach(cat => {
             if (cat.active && cat.x < 700 && cat.texture.key === 'catSleep') {
                 cat.setTexture('catAngry');
-                cat.setVelocityY(-1200); // 垂直ジャンプも少し控えめに
-                this.time.delayedCall(300, () => { if(cat.active) { cat.setVelocityY(0); cat.setVelocityX(-800); }});
+                // ジャンプ力を強化！(-1500くらいにすると画面中央より上まで届きます)
+                cat.setVelocityY(-1500); 
+                this.time.delayedCall(300, () => { 
+                    if(cat.active) { 
+                        cat.setVelocityY(0); 
+                        cat.setVelocityX(-800); 
+                    }
+                });
             }
         });
 
