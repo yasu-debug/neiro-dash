@@ -35,25 +35,28 @@
         this.add.image(400, 300, 'background');
         this.gameStarted = false;
         
-        // ボタンを配置
-        this.startBtn = this.add.image(400, 350, 'startButton').setInteractive();
-        
-        // 【ここを確実に】ボタンがクリックされたらゲームを開始する
-        this.startBtn.on('pointerdown', () => {
-            if (this.gameStarted) return; // 二重実行防止
-            this.startBtn.setVisible(false);   // ボタンを消す
-            this.gameStarted = true;
-            this.startTime = this.time.now;
-        });
-
-        // --- ゲーム本体 ---
-        this.ground = this.physics.add.staticGroup();
-        this.ground.create(400, 610, null).setSize(800, 40).setVisible(false);
-
+        // --- ゲーム本体の準備（まずは隠しておく） ---
         this.player = this.physics.add.sprite(150, 400, 'run');
         this.player.setCollideWorldBounds(true);
         this.player.body.setSize(this.player.width * 0.7, this.player.height * 0.8);
+        this.player.setVisible(false); // ★ここ！最初は隠す
+        this.player.body.enable = false; // ★物理演算もオフ
+
+        this.ground = this.physics.add.staticGroup();
+        this.ground.create(400, 610, null).setSize(800, 40).setVisible(false);
         this.physics.add.collider(this.player, this.ground);
+
+        // ボタンを配置
+        this.startBtn = this.add.image(400, 350, 'startButton').setInteractive();
+        
+        this.startBtn.on('pointerdown', () => {
+            if (this.gameStarted) return;
+            this.startBtn.setVisible(false); // ボタンを消す
+            this.player.setVisible(true);    // ★ねいろちゃん登場！
+            this.player.body.enable = true;  // ★物理演算オン！
+            this.gameStarted = true;
+            this.startTime = this.time.now;
+        });
 
         this.obstacles = this.physics.add.group();
         this.items = this.physics.add.group();
@@ -92,6 +95,7 @@
     }
 
     function update(time) {
+        if (!this.gameStarted) return; // 開始前は動かさない
 
         this.player.setTexture(!this.player.body.touching.down ? 'jump' : 'run');
         if (this.cursors.up.isDown && this.player.body.touching.down) this.player.setVelocityY(-900);
