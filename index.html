@@ -12,43 +12,49 @@
         type: Phaser.AUTO,
         width: 800, height: 600,
         physics: { default: 'arcade', arcade: { gravity: { y: 800 } } },
-        scene: { create: create, update: update }
+        scene: { preload: preload, create: create, update: update }
     };
     const game = new Phaser.Game(config);
 
+    function preload() {
+        // もし画像ファイル名にスペースや全角文字が含まれているとエラーになります。
+        // ファイル名はすべて小文字の半角英数であることを確認してくださいね。
+        this.load.image('run', 'Neiro1.png');
+        this.load.image('jump', 'Neiro2.png');
+        this.load.image('background', 'background.png');
+    }
+
     function create() {
-        // 1. 地面 (青い四角形)
+        // 1. 背景 (まずは背景だけ表示されるか試します)
+        this.add.image(400, 300, 'background');
+
+        // 2. 地面
         this.platforms = this.physics.add.staticGroup();
-        let ground = this.add.rectangle(400, 580, 800, 40, 0x0000ff);
+        let ground = this.add.rectangle(400, 580, 800, 40, 0xffffff, 0); 
         this.physics.add.existing(ground, true);
         this.platforms.add(ground);
 
-        // 2. プレイヤー (赤い四角形: ねいろちゃんの代わり)
-        this.player = this.add.rectangle(400, 300, 50, 50, 0xff0000);
-        this.physics.add.existing(this.player);
-        this.player.body.setCollideWorldBounds(true);
-        this.player.body.setBounce(0.2);
-
-        // 3. 衝突判定
+        // 3. プレイヤー
+        this.player = this.physics.add.sprite(400, 300, 'run');
+        this.player.setCollideWorldBounds(true);
+        this.player.setBounce(0.2);
         this.physics.add.collider(this.player, this.platforms);
 
         this.cursors = this.input.keyboard.createCursorKeys();
     }
 
     function update() {
-        // 左右移動
-        if (this.cursors.left.isDown) {
-            this.player.body.setVelocityX(-200);
-        } else if (this.cursors.right.isDown) {
-            this.player.body.setVelocityX(200);
+        if (!this.player.body.touching.down) {
+            this.player.setTexture('jump');
         } else {
-            this.player.body.setVelocityX(0);
+            this.player.setTexture('run');
         }
 
-        // ジャンプ
-        if (this.cursors.up.isDown && this.player.body.touching.down) {
-            this.player.body.setVelocityY(-500);
-        }
+        if (this.cursors.left.isDown) this.player.setVelocityX(-200);
+        else if (this.cursors.right.isDown) this.player.setVelocityX(200);
+        else this.player.setVelocityX(0);
+
+        if (this.cursors.up.isDown && this.player.body.touching.down) this.player.setVelocityY(-500);
     }
 </script>
 </body>
