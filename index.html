@@ -36,7 +36,7 @@
         this.gameStarted = false;
 
         // スタート画面用のねいろちゃん（変数名をtitleNeiroにして独立）
-        //this.titleNeiro = this.add.image(400, 450, 'run').setScale(1.2);
+        this.titleNeiro = this.add.image(400, 450, 'run').setScale(1.2);
         this.startBtn = this.add.image(400, 350, 'startButton').setInteractive();
         
         this.startBtn.on('pointerdown', () => {
