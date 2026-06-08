@@ -113,11 +113,11 @@
             this.sound.play('bgm', { loop: true });
         };
 
-        // イベント設定：スタート
         this.startBtn.on('pointerdown', startGame);
         this.input.keyboard.on('keydown-ENTER', startGame);
 
-        // イベント設定：ジャンプ（スタートボタン以外をタップした時）
+        this.cursors = this.input.keyboard.createCursorKeys();
+
         this.input.on('pointerdown', (pointer) => {
             if (this.gameStarted && this.player.body.touching.down) {
                 this.player.setVelocityY(-900);
@@ -154,6 +154,12 @@
 
     function update() {
         if (!this.gameStarted) return;
+        
+        // ジャンプ判定：上矢印キー または タップ
+        if ((this.cursors.up.isDown) && this.player.body.touching.down) {
+            this.player.setVelocityY(-900);
+        }
+
         this.player.setTexture(!this.player.body.touching.down ? 'jump' : 'run');
         
         this.catTraps.forEach(cat => {
