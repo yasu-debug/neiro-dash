@@ -28,7 +28,7 @@
         this.load.image('catAngry', 'obstacles5Cat.png');
         this.load.image('star', 'star.png');
         this.load.image('timer', 'timer.png');
-        this.load.image('startButton', 'start.png'); // チョコレートのスタートボタン
+        this.load.image('startButton', 'start.png');
     }
 
     function create() {
@@ -36,10 +36,10 @@
         this.gameStarted = false;
 
         // --- スタート画面 ---
-        // ねいろちゃん1人
+        // ねいろちゃんは1人のみ！
         this.titleNeiro = this.add.image(400, 450, 'run').setScale(1.2);
         
-        // 星の下にスタートボタン
+        // 星の下（Y=350）にスタートボタンを配置
         this.startBtn = this.add.image(400, 350, 'startButton').setInteractive();
         
         // ボタンをクリックでゲームスタート
@@ -80,7 +80,6 @@
 
     function spawnObstacle() {
         if (!this.gameStarted) return;
-        // ... (省略: 前回のspawnObstacleの内容をそのまま使用)
         const speed = -750;
         const rand = Math.random();
         if (rand < 0.3) { 
@@ -112,7 +111,6 @@
         this.player.setTexture(!this.player.body.touching.down ? 'jump' : 'run');
         if (this.cursors.up.isDown && this.player.body.touching.down) this.player.setVelocityY(-900);
         
-        // ... (省略: 前回のupdateの内容をそのまま使用)
         this.catTraps.forEach(cat => {
             if (cat.active && cat.x < 700 && cat.texture.key === 'catSleep') {
                 cat.setTexture('catAngry');
