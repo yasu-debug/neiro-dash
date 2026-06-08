@@ -69,7 +69,7 @@
         this.add.image(400, 300, 'background');
         
         // タイトル
-        this.add.text(400, 140, 'ねいろのダッシュ！', { fontSize: '64px', fill: '#FFB6C1', stroke: '#FFF', strokeThickness: 8, fontStyle: 'bold' }).setOrigin(0.5);
+        this.add.text(400, 150, 'ねいろのダッシュ！', { fontSize: '64px', fill: '#FFB6C1', stroke: '#FFF', strokeThickness: 8, fontStyle: 'bold' }).setOrigin(0.5);
 
         // YouTubeアイコン
         const ytIcon = this.add.image(60, 540, 'ytIcon').setScale(0.15).setInteractive();
@@ -79,7 +79,7 @@
         const rankings = await window.getRanking();
         let rankStr = "【ランキング TOP3】\n";
         rankings.forEach((r, i) => rankStr += `${i+1}位: ${r.name} - ${r.score}秒\n`);
-        this.rankDisplay = this.add.text(400, 250, rankStr, { fontSize: '24px', fill: '#000', backgroundColor: '#fff', padding: 10 }).setOrigin(0.5);
+        this.rankDisplay = this.add.text(400, 280, rankStr, { fontSize: '24px', fill: '#000', backgroundColor: '#fff', padding: 10 }).setOrigin(0.5);
 
         // 操作説明
         const ctrlStr = "【操作方法】\nスタート: エンターキー\nジャンプ: 上矢印キー / 画面タップ";
