@@ -8,6 +8,17 @@
 </head>
 <body>
 <script>
+function preload() {
+    this.load.image('background', 'background.png'); // 追加
+    // ...既存の読み込み
+}
+function create() {
+    // 一番最初に背景を表示（x:400, y:300 は画面の中心です）
+    this.add.image(400, 300, 'background');
+
+    // ...既存の地面やプレイヤーの作成
+}
+    
     const config = {
         type: Phaser.AUTO,
         width: 800, height: 600,
