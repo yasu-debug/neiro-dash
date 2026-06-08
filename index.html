@@ -34,9 +34,6 @@
     function create() {
         this.add.image(400, 300, 'background');
         this.gameStarted = false;
-
-        // --- スタート画面 ---
-        this.titleNeiro = this.add.image(400, 450, 'run').setScale(1.2);
         
         // ボタンを配置
         this.startBtn = this.add.image(400, 350, 'startButton').setInteractive();
@@ -44,8 +41,6 @@
         // 【ここを確実に】ボタンがクリックされたらゲームを開始する
         this.startBtn.on('pointerdown', () => {
             if (this.gameStarted) return; // 二重実行防止
-            
-            this.titleNeiro.setVisible(false); // 表示を消す
             this.startBtn.setVisible(false);   // ボタンを消す
             this.gameStarted = true;
             this.startTime = this.time.now;
@@ -97,10 +92,6 @@
     }
 
     function update(time) {
-        if (!this.gameStarted) {
-            this.titleNeiro.y = 450 + Math.sin(time / 300) * 20;
-            return;
-        }
 
         this.player.setTexture(!this.player.body.touching.down ? 'jump' : 'run');
         if (this.cursors.up.isDown && this.player.body.touching.down) this.player.setVelocityY(-900);
