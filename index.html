@@ -49,6 +49,7 @@
     const game = new Phaser.Game(config);
 
     function preload() {
+        this.load.image('title', 'title.png');
         this.load.image('run', 'Neiro1.png');
         this.load.image('jump', 'Neiro2.png');
         this.load.image('background', 'background.png');
@@ -67,15 +68,6 @@
 
     async function create() {
         this.add.image(400, 300, 'background');
-        
-        // タイトル
-this.add.text(400, 170, 'ねいろのダッシュ！', { 
-    fontSize: '52px', 
-    fill: '#FFB6C1', 
-    stroke: '#FFF', 
-    strokeThickness: 6, 
-    fontStyle: 'bold' 
-}).setOrigin(0.5);
 
         // YouTubeアイコン
         const ytIcon = this.add.image(60, 540, 'ytIcon').setScale(0.15).setInteractive();
