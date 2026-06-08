@@ -11,7 +11,7 @@
     const config = {
         type: Phaser.AUTO,
         width: 800, height: 600,
-        physics: { default: 'arcade', arcade: { gravity: { y: 700 }, debug: false } }, 
+        physics: { default: 'arcade', arcade: { gravity: { y: 1200 }, debug: false } }, 
         scene: { preload: preload, create: create, update: update }
     };
     const game = new Phaser.Game(config);
@@ -43,20 +43,20 @@
         this.items = this.physics.add.group();
         
         this.physics.add.collider(this.player, this.obstacles, () => {
-            // リセット時、連続回避カウントもリセット
             this.consecutiveAvoids = 0;
             this.scene.restart();
         });
         
         this.physics.add.overlap(this.player, this.items, (player, item) => {
             if (item.texture.key === 'star') {
-                this.avoidCount += 2;
+                this.avoidCount += 2; // カウント+2
                 this.consecutiveAvoids = 0;
             } else if (item.texture.key === 'timer') {
                 this.bonusTime += 2000;
                 this.consecutiveAvoids = 0;
             }
             item.destroy();
+            this.scoreText.setText('回避: ' + this.avoidCount + ' / 10');
         });
 
         this.avoidCount = 0;
@@ -73,7 +73,6 @@
     }
 
     function spawnObstacle() {
-        // スピードを -800 に強化
         const speed = -800;
         const rand = Math.random();
 
@@ -83,7 +82,6 @@
             cat.body.setAllowGravity(false);
             this.catTraps.push(cat);
         } else if (rand < 0.4) { 
-            // アイテムを上部（Y=100）に出現させる
             let item = this.items.create(900, 100, Math.random() < 0.5 ? 'star' : 'timer');
             item.setVelocityX(speed);
             item.body.setAllowGravity(false);
@@ -107,18 +105,14 @@
             }
         });
 
-        // 連続回避によるアイテム軌道変化
-        if (this.consecutiveAvoids === 4) {
-            this.itemsMoving.forEach(i => { if(i.texture.key === 'timer') i.y = 100; });
-        }
-        if (this.consecutiveAvoids === 6) {
-            this.itemsMoving.forEach(i => {
-                if(i.texture.key === 'star') {
-                    i.y = 100;
-                    this.time.delayedCall(500, () => { if(i.active) i.y = 450; });
+        // 6回連続：スターが中央(X=400)で下に落ちて左へ直進
+        this.itemsMoving.forEach(i => {
+            if(i.active && i.texture.key === 'star' && this.consecutiveAvoids >= 6) {
+                if(i.x < 400 && i.y < 450) {
+                    i.y = 450; // 一気に下にワープ
                 }
-            });
-        }
+            }
+        });
 
         this.obstacles.getChildren().forEach(obs => {
             if (obs.x < -200) {
