@@ -2,6 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ねいろのダッシュ！</title>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
     <script type="module">
@@ -35,12 +36,13 @@
             });
         };
     </script>
-    <style>body { margin: 0; overflow: hidden; }</style>
+    <style>body { margin: 0; overflow: hidden; background-color: #000; }</style>
 </head>
 <body>
 <script>
     const config = {
         type: Phaser.AUTO, width: 800, height: 600,
+        scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
         physics: { default: 'arcade', arcade: { gravity: { y: 1400 }, debug: false } }, 
         scene: { preload: preload, create: create, update: update }
     };
@@ -68,7 +70,6 @@
         this.scoreText = this.add.text(16, 16, '回避: 0 / 10', { fontSize: '32px', fill: '#FFF' });
         this.timerText = this.add.text(780, 16, '0.00秒', { fontSize: '32px', fill: '#FFF' }).setOrigin(1, 0);
 
-        // 0.1秒おきにタイマーを更新するイベント（チカチカ防止）
         this.time.addEvent({
             delay: 100, 
             callback: () => {
@@ -110,6 +111,13 @@
         const ytLabel = this.add.text(0, 35, 'YouTubeへ', { fontSize: '20px', fill: '#000', backgroundColor: '#fff', padding: 5 }).setOrigin(0.5);
         this.ytContainer = this.add.container(400, 500, [ytIcon, ytLabel]).setInteractive(new Phaser.Geom.Rectangle(-50, -50, 100, 100), Phaser.Geom.Rectangle.Contains);
         this.ytContainer.on('pointerdown', () => window.open('https://www.youtube.com/channel/UC9tdREypdhZQ9Hemq82r95Q', '_blank'));
+
+        // タップ/クリックでのジャンプ設定
+        this.input.on('pointerdown', () => {
+            if (this.gameStarted && this.player.body.touching.down) {
+                this.player.setVelocityY(-900);
+            }
+        });
 
         this.resetGame = () => {
             this.gameStarted = false;
