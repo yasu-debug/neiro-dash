@@ -75,7 +75,16 @@
 
         // 操作説明の表示
         const ctrlStr = "【操作方法】\nスタート: エンターキー\nジャンプ: 上矢印キー / 画面タップ";
-        this.ctrlDisplay = this.add.text(780, 580, ctrlStr, { fontSize: '18px', fill: '#FFF', align: 'right' }).setOrigin(1, 1);
+
+// 赤文字にして、さらに読みやすくするための設定を追加
+this.ctrlDisplay = this.add.text(780, 580, ctrlStr, { 
+    fontSize: '20px', 
+    fill: '#FF4500', // 少し明るめの赤色（オレンジレッド）
+    align: 'right',
+    fontStyle: 'bold', // 太字にして存在感をアップ
+    stroke: '#000000', // 黒い縁取り
+    strokeThickness: 4
+}).setOrigin(1, 1);
 
         this.scoreText = this.add.text(16, 16, '回避: 0 / 10', { fontSize: '32px', fill: '#FFF' }).setVisible(false);
         this.timerText = this.add.text(780, 16, '0.00秒', { fontSize: '32px', fill: '#FFF' }).setOrigin(1, 0).setVisible(false);
