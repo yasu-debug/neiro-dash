@@ -61,26 +61,28 @@
         this.load.image('star', 'star.png');
         this.load.image('timer', 'timer.png');
         this.load.image('startButton', 'start.png');
-        this.load.image('ytIcon', 'logo.png');
         this.load.audio('bgm', 'bgm1.mp3');
     }
 
-    function create() {
+    async function create() {
         this.add.image(400, 300, 'background');
-        this.scoreText = this.add.text(16, 16, '回避: 0 / 10', { fontSize: '32px', fill: '#FFF' });
-        this.timerText = this.add.text(780, 16, '0.00秒', { fontSize: '32px', fill: '#FFF' }).setOrigin(1, 0);
+        
+        // ランキングの取得と表示
+        const rankings = await window.getRanking();
+        let rankStr = "【ランキング TOP3】\n";
+        rankings.forEach((r, i) => rankStr += `${i+1}位: ${r.name} - ${r.score}秒\n`);
+        this.rankDisplay = this.add.text(400, 150, rankStr, { fontSize: '24px', fill: '#000', backgroundColor: '#fff', padding: 10 }).setOrigin(0.5);
 
-        this.time.addEvent({ delay: 100, callback: () => {
-            if (this.gameStarted) {
-                let currentTime = ((this.time.now - this.startTime - (this.bonusTime || 0)) / 1000).toFixed(2);
-                this.timerText.setText(Math.max(0, currentTime) + '秒');
-            }
-        }, loop: true });
+        // 操作説明の表示
+        const ctrlStr = "【操作方法】\nスタート: エンターキー\nジャンプ: 上矢印キー / 画面タップ";
+        this.ctrlDisplay = this.add.text(780, 580, ctrlStr, { fontSize: '18px', fill: '#FFF', align: 'right' }).setOrigin(1, 1);
+
+        this.scoreText = this.add.text(16, 16, '回避: 0 / 10', { fontSize: '32px', fill: '#FFF' }).setVisible(false);
+        this.timerText = this.add.text(780, 16, '0.00秒', { fontSize: '32px', fill: '#FFF' }).setOrigin(1, 0).setVisible(false);
 
         this.obstacles = this.physics.add.group();
         this.items = this.physics.add.group();
         this.catTraps = [];
-        this.avoidCount = 0;
 
         this.player = this.physics.add.sprite(150, 400, 'run').setVisible(false);
         this.player.body.setAllowGravity(true);
@@ -98,11 +100,15 @@
             }
         });
 
-        this.startBtn = this.add.image(400, 350, 'startButton').setInteractive();
+        this.startBtn = this.add.image(400, 400, 'startButton').setInteractive();
 
         const startGame = () => {
             if (this.gameStarted) return;
             this.startBtn.setVisible(false);
+            this.rankDisplay.setVisible(false);
+            this.ctrlDisplay.setVisible(false);
+            this.scoreText.setVisible(true);
+            this.timerText.setVisible(true);
             this.player.setVisible(true).body.enable = true;
             this.player.setPosition(150, 400);
             this.gameStarted = true;
@@ -116,26 +122,23 @@
         this.startBtn.on('pointerdown', startGame);
         this.input.keyboard.on('keydown-ENTER', startGame);
 
-        this.cursors = this.input.keyboard.createCursorKeys();
-
         this.input.on('pointerdown', (pointer) => {
-            if (this.gameStarted && this.player.body.touching.down) {
-                this.player.setVelocityY(-900);
-            }
+            if (this.gameStarted && this.player.body.touching.down) this.player.setVelocityY(-900);
         });
 
         this.resetGame = () => {
             this.gameStarted = false;
-            this.player.body.setVelocity(0);
-            this.player.setVisible(false).body.enable = false;
-            this.startBtn.setVisible(true);
-            this.obstacles.clear(true, true);
-            this.items.clear(true, true);
-            this.catTraps = [];
-            this.sound.stopAll();
+            location.reload(); // シンプルにリロードして初期状態に戻す
         };
         
         this.time.addEvent({ delay: 1500, callback: spawnObstacle, callbackScope: this, loop: true });
+        this.time.addEvent({ delay: 100, callback: () => {
+            if (this.gameStarted) {
+                let currentTime = ((this.time.now - this.startTime - (this.bonusTime || 0)) / 1000).toFixed(2);
+                this.timerText.setText(Math.max(0, currentTime) + '秒');
+            }
+        }, loop: true });
+        this.cursors = this.input.keyboard.createCursorKeys();
     }
 
     function spawnObstacle() {
@@ -154,12 +157,7 @@
 
     function update() {
         if (!this.gameStarted) return;
-        
-        // ジャンプ判定：上矢印キー または タップ
-        if ((this.cursors.up.isDown) && this.player.body.touching.down) {
-            this.player.setVelocityY(-900);
-        }
-
+        if (this.cursors.up.isDown && this.player.body.touching.down) this.player.setVelocityY(-900);
         this.player.setTexture(!this.player.body.touching.down ? 'jump' : 'run');
         
         this.catTraps.forEach(cat => {
@@ -171,20 +169,16 @@
         });
         
         this.obstacles.getChildren().forEach(obs => { 
-            if (obs.x < -200) { 
-                obs.destroy(); 
-                this.avoidCount++; 
-                this.scoreText.setText('回避: ' + this.avoidCount + ' / 10'); 
-            } 
+            if (obs.x < -200) { obs.destroy(); this.avoidCount++; this.scoreText.setText('回避: ' + this.avoidCount + ' / 10'); } 
         });
 
         if (this.avoidCount >= 10 && this.gameStarted) {
             this.gameStarted = false;
             let finalTime = ((this.time.now - this.startTime - (this.bonusTime || 0)) / 1000).toFixed(2);
             this.sound.stopAll();
-            const name = prompt("クリア！ " + Math.max(0, finalTime) + " 秒！お名前を入力してね！");
-            if (name) window.saveRanking(name, Math.max(0, finalTime)).then(() => location.reload());
-            else this.resetGame();
+            const name = prompt("クリア！ " + Math.max(0, finalTime) + " 秒！");
+            if (name) window.saveRanking(name, finalTime).then(() => location.reload());
+            else location.reload();
         }
     }
 </script>
