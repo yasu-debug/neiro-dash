@@ -30,19 +30,9 @@
         };
 
         window.saveRanking = async (name, time) => {
-            const q = query(collection(db, RANKING_COLLECTION), orderBy("score", "asc"), limit(3));
-            const snapshot = await getDocs(q);
-            let scores = [];
-            snapshot.forEach(doc => scores.push(doc.data().score));
-
-            if (scores.length < 3 || time < scores[2]) {
-                await addDoc(collection(db, RANKING_COLLECTION), { 
-                    name: name, score: parseFloat(time), createdAt: serverTimestamp() 
-                });
-                alert("おめでとう！ランキング入りしました！");
-            } else {
-                alert("タイム: " + time + " 秒！今回はランク外でした…");
-            }
+            await addDoc(collection(db, RANKING_COLLECTION), { 
+                name: name, score: parseFloat(time), createdAt: serverTimestamp() 
+            });
         };
     </script>
     <style>body { margin: 0; overflow: hidden; }</style>
@@ -75,48 +65,56 @@
 
     async function create() {
         this.add.image(400, 300, 'background');
-        
-        // --- 1. 回避カウント（既存） ---
         this.scoreText = this.add.text(16, 16, '回避: 0 / 10', { fontSize: '32px', fill: '#FFF' });
 
-        // --- 2. ランキング表示（左側・回避カウントの下） ---
         const rankings = await window.getRanking();
         let rankText = "【ランキング TOP3】\n";
         rankings.forEach((r, i) => rankText += `${i+1}位: ${r.name} - ${r.score}秒\n`);
         this.add.text(16, 60, rankText, { fontSize: '18px', fill: '#000', backgroundColor: '#fff', padding: 5 });
 
-        this.gameStarted = false;
         this.player = this.physics.add.sprite(150, 400, 'run').setVisible(false);
         this.player.body.enable = false;
 
         this.ground = this.physics.add.staticGroup().create(400, 610, null).setSize(800, 40).setVisible(false);
         this.physics.add.collider(this.player, this.ground);
 
-        const startGame = () => {
-            if (this.gameStarted) return;
-            this.startBtn.setVisible(false);
-            this.ytContainer.setVisible(false); // コンテナごと非表示
-            this.player.setVisible(true).body.enable = true;
-            this.gameStarted = true;
-            this.startTime = this.time.now;
-            if (!this.sound.get('bgm')) this.sound.play('bgm', { loop: true });
-        };
-
-        this.startBtn = this.add.image(400, 350, 'startButton').setInteractive().on('pointerdown', startGame);
-
-        // --- 3. YouTubeアイコンとテキスト（画面中央・星の位置） ---
+        this.startBtn = this.add.image(400, 350, 'startButton').setInteractive();
         const ytIcon = this.add.image(0, 0, 'ytIcon').setScale(0.15);
         const ytLabel = this.add.text(0, 35, 'YouTubeへ', { fontSize: '20px', fill: '#000', backgroundColor: '#fff', padding: 5 }).setOrigin(0.5);
         this.ytContainer = this.add.container(400, 500, [ytIcon, ytLabel]).setInteractive(new Phaser.Geom.Rectangle(-50, -50, 100, 100), Phaser.Geom.Rectangle.Contains);
         this.ytContainer.on('pointerdown', () => window.open('https://www.youtube.com/channel/UC9tdREypdhZQ9Hemq82r95Q', '_blank'));
 
+        this.resetGame = () => {
+            this.gameStarted = false;
+            this.avoidCount = 0;
+            this.bonusTime = 0;
+            this.scoreText.setText('回避: 0 / 10');
+            this.player.setVisible(false).body.enable = false;
+            this.startBtn.setVisible(true);
+            this.ytContainer.setVisible(true);
+            this.obstacles.clear(true, true);
+            this.items.clear(true, true);
+            this.catTraps = [];
+            this.sound.stopAll();
+        };
+
+        const startGame = () => {
+            if (this.gameStarted) return;
+            this.startBtn.setVisible(false);
+            this.ytContainer.setVisible(false);
+            this.player.setVisible(true).body.enable = true;
+            this.gameStarted = true;
+            this.startTime = this.time.now;
+            this.sound.play('bgm', { loop: true });
+        };
+
+        this.startBtn.on('pointerdown', startGame);
         this.input.keyboard.on('keydown-ENTER', startGame);
+
         this.obstacles = this.physics.add.group();
         this.items = this.physics.add.group();
-        this.physics.add.collider(this.player, this.obstacles, () => { this.sound.stopAll(); this.scene.restart(); });
-        this.catTraps = [];
-        this.avoidCount = 0;
-        this.bonusTime = 0;
+        this.physics.add.collider(this.player, this.obstacles, () => this.resetGame());
+        
         this.time.addEvent({ delay: 1500, callback: spawnObstacle, callbackScope: this, loop: true });
         this.cursors = this.input.keyboard.createCursorKeys();
     }
@@ -147,8 +145,8 @@
             let finalTime = ((this.time.now - this.startTime - this.bonusTime) / 1000).toFixed(2);
             this.sound.stopAll();
             const name = prompt("クリア！ " + finalTime + " 秒！お名前を入力してね！");
-            if (name) window.saveRanking(name, finalTime).then(() => this.scene.restart());
-            else this.scene.restart();
+            if (name) window.saveRanking(name, finalTime).then(() => location.reload());
+            else this.resetGame();
         }
     }
 </script>
