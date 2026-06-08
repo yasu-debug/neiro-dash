@@ -69,27 +69,24 @@
     }
 
     function spawnObstacle() {
+        // スピードを全体的に少し落としました (-800 -> -600)
+        const speed = -600;
         const rand = Math.random();
 
-        // 1. 猫トラップ（30%）
         if (rand < 0.3) { 
             let cat = this.obstacles.create(900, 550, 'catSleep');
-            cat.setVelocityX(-800);
+            cat.setVelocityX(speed);
             cat.body.setAllowGravity(false);
             this.catTraps.push(cat);
-        } 
-        // 2. アイテム（20%：スターかタイマーがランダムに！）
-        else if (rand < 0.5) {
-            let isStar = Math.random() < 0.5;
-            let item = this.items.create(900, 100, isStar ? 'star' : 'timer');
-            item.setVelocityX(-600); // 少しだけスピードを落としました
+        } else if (rand < 0.5) {
+            // スターとタイマーを上部（Y=100）に流す（落下なし！）
+            let item = this.items.create(900, 100, Math.random() < 0.5 ? 'star' : 'timer');
+            item.setVelocityX(speed);
             item.body.setAllowGravity(false);
             this.itemsMoving.push(item);
-        } 
-        // 3. 通常障害物（残り50%）
-        else {
+        } else {
             let obs = this.obstacles.create(900, 550, Phaser.Math.RND.pick(['obs1', 'obs2', 'obs3', 'obs6']));
-            obs.setVelocityX(-800);
+            obs.setVelocityX(speed);
             obs.body.setAllowGravity(false);
         }
     }
@@ -98,19 +95,12 @@
         this.player.setTexture(!this.player.body.touching.down ? 'jump' : 'run');
         if (this.cursors.up.isDown && this.player.body.touching.down) this.player.setVelocityY(-900);
 
-        // スターの落下処理（スターなら確率で落下するように変更）
-        this.itemsMoving.forEach(i => {
-            if(i.active && i.texture.key === 'star' && i.x < 420 && i.x > 380 && i.y < 200) {
-                if(Math.random() < 0.7) i.y = 450; 
-            }
-        });
-
-        // 猫処理
+        // 猫処理もスピード調整
         this.catTraps.forEach(cat => {
             if (cat.active && cat.x < 700 && cat.texture.key === 'catSleep') {
                 cat.setTexture('catAngry');
-                cat.setVelocityY(-1500);
-                this.time.delayedCall(300, () => { if(cat.active) { cat.setVelocityY(0); cat.setVelocityX(-900); }});
+                cat.setVelocityY(-1200); // 垂直ジャンプも少し控えめに
+                this.time.delayedCall(300, () => { if(cat.active) { cat.setVelocityY(0); cat.setVelocityX(-800); }});
             }
         });
 
