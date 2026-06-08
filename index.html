@@ -28,22 +28,27 @@
         this.load.image('catAngry', 'obstacles5Cat.png');
         this.load.image('star', 'star.png');
         this.load.image('timer', 'timer.png');
-        this.load.image('startButton', 'start.png');
+        this.load.image('startButton', 'start.png'); // チョコレートのスタートボタン
     }
 
     function create() {
         this.add.image(400, 300, 'background');
         this.gameStarted = false;
 
-        // --- スタート画面の配置 ---
-        // 二人のねいろちゃん
-        this.neiro1 = this.add.image(200, 500, 'run');
-        this.neiro2 = this.add.image(600, 500, 'run');
+        // --- スタート画面 ---
+        // ねいろちゃん1人
+        this.titleNeiro = this.add.image(400, 450, 'run').setScale(1.2);
         
-        // スターの位置にスタートボタンを配置
-        this.startBtn = this.physics.add.sprite(400, 150, 'startButton').setInteractive();
-        this.startBtn.body.setAllowGravity(false);
-        this.startBtn.setImmovable(true);
+        // 星の下にスタートボタン
+        this.startBtn = this.add.image(400, 350, 'startButton').setInteractive();
+        
+        // ボタンをクリックでゲームスタート
+        this.startBtn.on('pointerdown', () => {
+            this.titleNeiro.destroy();
+            this.startBtn.destroy();
+            this.gameStarted = true;
+            this.startTime = this.time.now;
+        });
 
         // --- ゲーム本体 ---
         this.ground = this.physics.add.staticGroup();
@@ -54,21 +59,18 @@
         this.player.body.setSize(this.player.width * 0.7, this.player.height * 0.8);
         this.physics.add.collider(this.player, this.ground);
 
-        // ボタンとの衝突判定（触れたらスタート）
-        this.physics.add.collider(this.player, this.startBtn, () => {
-            if(!this.gameStarted) {
-                this.gameStarted = true;
-                this.startBtn.destroy();
-                this.neiro1.destroy();
-                this.neiro2.destroy();
-                this.startTime = this.time.now;
-            }
-        });
-
         this.obstacles = this.physics.add.group();
         this.items = this.physics.add.group();
+        
         this.physics.add.collider(this.player, this.obstacles, () => this.scene.restart());
         
+        this.physics.add.overlap(this.player, this.items, (player, item) => {
+            if (item.texture.key === 'star') this.avoidCount += 2;
+            else if (item.texture.key === 'timer') this.bonusTime += 2000;
+            item.destroy();
+            this.scoreText.setText('回避: ' + this.avoidCount + ' / 10');
+        });
+
         this.avoidCount = 0;
         this.scoreText = this.add.text(16, 16, '', { fontSize: '32px', fill: '#FFF' });
         this.catTraps = [];
@@ -78,21 +80,60 @@
 
     function spawnObstacle() {
         if (!this.gameStarted) return;
-        // ... (省略: 前回のspawnObstacleの内容をそのまま使用してください)
+        // ... (省略: 前回のspawnObstacleの内容をそのまま使用)
+        const speed = -750;
+        const rand = Math.random();
+        if (rand < 0.3) { 
+            let cat = this.obstacles.create(900, 550, 'catSleep');
+            cat.setVelocityX(speed);
+            cat.body.setAllowGravity(false);
+            cat.body.setSize(cat.width * 0.6, cat.height * 0.6);
+            this.catTraps.push(cat);
+        } else if (rand < 0.5) {
+            let item = this.items.create(900, 100, Math.random() < 0.5 ? 'star' : 'timer');
+            item.setVelocityX(speed);
+            item.body.setAllowGravity(false);
+        } else {
+            let obs = this.obstacles.create(900, 550, Phaser.Math.RND.pick(['obs1', 'obs2', 'obs3', 'obs6']));
+            obs.setVelocityX(speed);
+            obs.body.setAllowGravity(false);
+            obs.body.setSize(obs.width * 0.6, obs.height * 0.6);
+        }
     }
 
     function update(time) {
         if (!this.gameStarted) {
-            // 二人のねいろちゃんをふわふわさせる
-            this.neiro1.y = 500 + Math.sin(time / 300) * 20;
-            this.neiro2.y = 500 + Math.cos(time / 300) * 20;
+            // ねいろちゃんがその場でふわふわ
+            this.titleNeiro.y = 450 + Math.sin(time / 300) * 20;
             return;
         }
 
         this.scoreText.setText('回避: ' + this.avoidCount + ' / 10');
         this.player.setTexture(!this.player.body.touching.down ? 'jump' : 'run');
         if (this.cursors.up.isDown && this.player.body.touching.down) this.player.setVelocityY(-900);
-        // ... (省略: 前回のupdateの内容をそのまま使用してください)
+        
+        // ... (省略: 前回のupdateの内容をそのまま使用)
+        this.catTraps.forEach(cat => {
+            if (cat.active && cat.x < 700 && cat.texture.key === 'catSleep') {
+                cat.setTexture('catAngry');
+                cat.setVelocityY(-1500); 
+                this.time.delayedCall(300, () => { if(cat.active) { cat.setVelocityY(0); cat.setVelocityX(-800); }});
+            }
+        });
+
+        this.obstacles.getChildren().forEach(obs => {
+            if (obs.x < -200) {
+                obs.destroy();
+                this.avoidCount++;
+                this.scoreText.setText('回避: ' + this.avoidCount + ' / 10');
+            }
+        });
+
+        if (this.avoidCount >= 10) {
+            let finalTime = ((this.time.now - this.startTime - this.bonusTime) / 1000).toFixed(2);
+            alert("クリア！タイム: " + finalTime + " 秒");
+            this.scene.restart();
+        }
     }
 </script>
 </body>
