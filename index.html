@@ -2,8 +2,9 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>テスト用画面</title>
+    <title>ねいろのダッシュ！</title>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+    <style>body { margin: 0; }</style>
 </head>
 <body>
 <script>
@@ -11,23 +12,43 @@
         type: Phaser.AUTO,
         width: 800, height: 600,
         physics: { default: 'arcade', arcade: { gravity: { y: 800 } } },
-        scene: { create: create }
+        scene: { create: create, update: update }
     };
-    new Phaser.Game(config);
+    const game = new Phaser.Game(config);
 
     function create() {
-        // 画像を使わず、赤い四角形をプレイヤーとして表示します
+        // 1. 地面 (青い四角形)
+        this.platforms = this.physics.add.staticGroup();
+        let ground = this.add.rectangle(400, 580, 800, 40, 0x0000ff);
+        this.physics.add.existing(ground, true);
+        this.platforms.add(ground);
+
+        // 2. プレイヤー (赤い四角形: ねいろちゃんの代わり)
         this.player = this.add.rectangle(400, 300, 50, 50, 0xff0000);
         this.physics.add.existing(this.player);
         this.player.body.setCollideWorldBounds(true);
-        
-        // 地面（青い四角形）
-        let ground = this.add.rectangle(400, 580, 800, 40, 0x0000ff);
-        this.physics.add.existing(ground, true);
-        this.physics.add.collider(this.player, ground);
-        
-        // メッセージを表示
-        this.add.text(10, 10, '赤と青の四角形が見えたら、Phaserは正常です！', { fill: '#ffffff' });
+        this.player.body.setBounce(0.2);
+
+        // 3. 衝突判定
+        this.physics.add.collider(this.player, this.platforms);
+
+        this.cursors = this.input.keyboard.createCursorKeys();
+    }
+
+    function update() {
+        // 左右移動
+        if (this.cursors.left.isDown) {
+            this.player.body.setVelocityX(-200);
+        } else if (this.cursors.right.isDown) {
+            this.player.body.setVelocityX(200);
+        } else {
+            this.player.body.setVelocityX(0);
+        }
+
+        // ジャンプ
+        if (this.cursors.up.isDown && this.player.body.touching.down) {
+            this.player.body.setVelocityY(-500);
+        }
     }
 </script>
 </body>
