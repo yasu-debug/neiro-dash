@@ -6,7 +6,7 @@
     <title>ねいろのダッシュ！</title>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
     <script type="module">
-        // (省略: Firebase部分はそのまま)
+        // (Firebase部分は以前のものと同じです)
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
         import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
         
@@ -71,9 +71,18 @@
         this.scoreText = this.add.text(16, 16, '回避: 0 / 10', { fontSize: '32px', fill: '#FFF' });
         this.timerText = this.add.text(780, 16, '0.00秒', { fontSize: '32px', fill: '#FFF' }).setOrigin(1, 0);
 
+        // タイマー更新処理
+        this.time.addEvent({ delay: 100, callback: () => {
+            if (this.gameStarted) {
+                let currentTime = ((this.time.now - this.startTime - (this.bonusTime || 0)) / 1000).toFixed(2);
+                this.timerText.setText(Math.max(0, currentTime) + '秒');
+            }
+        }, loop: true });
+
         this.obstacles = this.physics.add.group();
         this.items = this.physics.add.group();
         this.catTraps = [];
+        this.avoidCount = 0; // 初期化
 
         this.player = this.physics.add.sprite(150, 400, 'run').setVisible(false);
         this.player.body.setAllowGravity(true);
@@ -84,7 +93,7 @@
         this.physics.add.overlap(this.player, this.items, (player, item) => {
             item.destroy();
             if (item.texture.key === 'star') {
-                this.avoidCount = (this.avoidCount || 0) + 2;
+                this.avoidCount += 2;
                 this.scoreText.setText('回避: ' + this.avoidCount + ' / 10');
             } else if (item.texture.key === 'timer') {
                 this.bonusTime = (this.bonusTime || 0) + 2000;
@@ -93,7 +102,23 @@
 
         this.startBtn = this.add.image(400, 350, 'startButton').setInteractive();
 
-        this.input.on('pointerdown', () => {
+        // 共通スタート関数
+        const startGame = () => {
+            if (this.gameStarted) return;
+            this.startBtn.setVisible(false);
+            this.player.setVisible(true).body.enable = true;
+            this.player.setPosition(150, 400);
+            this.gameStarted = true;
+            this.startTime = this.time.now;
+            this.bonusTime = 0;
+            this.avoidCount = 0;
+            this.scoreText.setText('回避: 0 / 10');
+            this.sound.play('bgm', { loop: true });
+        };
+
+        this.startBtn.on('pointerdown', startGame);
+        this.input.keyboard.on('keydown-ENTER', startGame);
+        this.input.on('pointerdown', (pointer) => {
             if (this.gameStarted && this.player.body.touching.down) {
                 this.player.setVelocityY(-900);
             }
@@ -101,26 +126,14 @@
 
         this.resetGame = () => {
             this.gameStarted = false;
-            this.avoidCount = 0;
-            this.bonusTime = 0;
-            this.player.body.setVelocity(0); // ★重要：物理速度を完全に停止
+            this.player.body.setVelocity(0);
             this.player.setVisible(false).body.enable = false;
-            this.player.setPosition(150, 400);
             this.startBtn.setVisible(true);
-            this.obstacles.clear(true, true); // ★グループを完全に消去
+            this.obstacles.clear(true, true);
             this.items.clear(true, true);
-            this.catTraps = []; // ★配列も空に
+            this.catTraps = [];
             this.sound.stopAll();
         };
-
-        this.startBtn.on('pointerdown', () => {
-            if (this.gameStarted) return;
-            this.startBtn.setVisible(false);
-            this.player.setVisible(true).body.enable = true;
-            this.gameStarted = true;
-            this.startTime = this.time.now;
-            this.sound.play('bgm', { loop: true });
-        });
         
         this.time.addEvent({ delay: 1500, callback: spawnObstacle, callbackScope: this, loop: true });
     }
@@ -150,7 +163,23 @@
                 this.time.delayedCall(300, () => { if(cat.active) { cat.setVelocityY(0); cat.setVelocityX(-800); }});
             }
         });
-        // (以下、回避カウントやクリア判定はそのまま)
+        
+        this.obstacles.getChildren().forEach(obs => { 
+            if (obs.x < -200) { 
+                obs.destroy(); 
+                this.avoidCount++; 
+                this.scoreText.setText('回避: ' + this.avoidCount + ' / 10'); 
+            } 
+        });
+
+        if (this.avoidCount >= 10 && this.gameStarted) {
+            this.gameStarted = false;
+            let finalTime = ((this.time.now - this.startTime - (this.bonusTime || 0)) / 1000).toFixed(2);
+            this.sound.stopAll();
+            const name = prompt("クリア！ " + Math.max(0, finalTime) + " 秒！お名前を入力してね！");
+            if (name) window.saveRanking(name, Math.max(0, finalTime)).then(() => location.reload());
+            else this.resetGame();
+        }
     }
 </script>
 </body>
