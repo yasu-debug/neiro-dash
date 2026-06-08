@@ -44,14 +44,8 @@
 <body>
 <script>
     const config = {
-        type: Phaser.AUTO, 
-        width: 800, height: 600,
-        // ここで画面を限界まで広げる設定に強化したよ！
-        scale: { 
-            mode: Phaser.Scale.FIT, 
-            autoCenter: Phaser.Scale.CENTER_BOTH,
-            parent: 'game-container'
-        },
+        type: Phaser.AUTO, width: 800, height: 600,
+        scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
         physics: { default: 'arcade', arcade: { gravity: { y: 1400 }, debug: false } }, 
         scene: { preload: preload, create: create, update: update }
     };
@@ -76,11 +70,13 @@
 
     async function create() {
         this.add.image(400, 300, 'background');
+        // 初期表示を安全に設定
         this.scoreText = this.add.text(16, 16, '回避: 0 / 10', { fontSize: '32px', fill: '#FFF' });
         this.timerText = this.add.text(780, 16, '0.00秒', { fontSize: '32px', fill: '#FFF' }).setOrigin(1, 0);
 
         this.time.addEvent({ delay: 100, callback: () => {
-            if (this.gameStarted) {
+            // gameStartedがtrueの時だけ、かつ変数が存在する場合のみ更新
+            if (this.gameStarted && this.startTime !== undefined) {
                 let currentTime = ((this.time.now - this.startTime - (this.bonusTime || 0)) / 1000).toFixed(2);
                 this.timerText.setText(Math.max(0, currentTime) + '秒');
             }
@@ -104,19 +100,16 @@
         this.physics.add.overlap(this.player, this.items, (player, item) => {
             item.destroy();
             if (item.texture.key === 'star') {
-                this.avoidCount += 2;
+                this.avoidCount = (this.avoidCount || 0) + 2; // 安全に加算
                 this.scoreText.setText('回避: ' + this.avoidCount + ' / 10');
             } else if (item.texture.key === 'timer') {
                 this.bonusTime = (this.bonusTime || 0) + 2000;
             }
         });
 
-        // スタートボタン作成
         this.startBtn = this.add.image(400, 350, 'startButton').setInteractive();
         
-        // --- 修正: ジャンプをより確実にするために、スタートボタン以外をタップした時だけジャンプさせる ---
-        this.input.on('pointerdown', (pointer) => {
-            // もしスタートボタンを押している最中ならジャンプさせない
+        this.input.on('pointerdown', () => {
             if (this.gameStarted && this.player.body.touching.down) {
                 this.player.setVelocityY(-900);
             }
@@ -141,6 +134,8 @@
             this.player.setVisible(true).body.enable = true;
             this.gameStarted = true;
             this.startTime = this.time.now;
+            this.bonusTime = 0;
+            this.avoidCount = 0; // 明示的に初期化
             this.sound.play('bgm', { loop: true });
         };
 
@@ -170,7 +165,7 @@
         this.player.setTexture(!this.player.body.touching.down ? 'jump' : 'run');
         if (this.cursors.up.isDown && this.player.body.touching.down) this.player.setVelocityY(-900);
         
-        this.obstacles.getChildren().forEach(obs => { if (obs.x < -200) { obs.destroy(); this.avoidCount++; this.scoreText.setText('回避: ' + this.avoidCount + ' / 10'); } });
+        this.obstacles.getChildren().forEach(obs => { if (obs.x < -200) { obs.destroy(); this.avoidCount = (this.avoidCount || 0) + 1; this.scoreText.setText('回避: ' + this.avoidCount + ' / 10'); } });
 
         if (this.avoidCount >= 10 && this.gameStarted) {
             this.gameStarted = false;
