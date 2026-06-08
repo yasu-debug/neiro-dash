@@ -86,8 +86,8 @@ function spawnObstacle() {
 
             // ジャンプ判定
         if (this.cursors.up.isDown && this.player.body.touching.down) {
-            // ここを -700 から -850 に変更！
-            this.player.setVelocityY(-850); 
+            // ここを -700 から -950 に変更！
+            this.player.setVelocityY(-950); 
         }
 
         // 画面左端（-100）を超えた障害物を削除（これでメモリ不足やバグを防ぎます）
