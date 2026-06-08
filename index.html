@@ -35,12 +35,11 @@
         this.add.image(400, 300, 'background');
         this.gameStarted = false;
         
-        // --- ゲーム本体の準備（まずは隠しておく） ---
+        // --- ゲーム本体の準備 ---
         this.player = this.physics.add.sprite(150, 400, 'run');
         this.player.setCollideWorldBounds(true);
-        this.player.body.setSize(this.player.width * 0.7, this.player.height * 0.8);
-        this.player.setVisible(false); // ★ここ！最初は隠す
-        this.player.body.enable = false; // ★物理演算もオフ
+        this.player.setVisible(false); // 最初は隠す
+        this.player.body.enable = false; // 最初はオフ
 
         this.ground = this.physics.add.staticGroup();
         this.ground.create(400, 610, null).setSize(800, 40).setVisible(false);
@@ -51,16 +50,30 @@
         
         this.startBtn.on('pointerdown', () => {
             if (this.gameStarted) return;
-            this.startBtn.setVisible(false); // ボタンを消す
-            this.player.setVisible(true);    // ★ねいろちゃん登場！
-            this.player.body.enable = true;  // ★物理演算オン！
+            this.startBtn.setVisible(false); 
+            this.player.setVisible(true);
+            this.player.body.enable = true;
+            this.player.body.setSize(this.player.width * 0.7, this.player.height * 0.8);
             this.gameStarted = true;
             this.startTime = this.time.now;
         });
 
         this.obstacles = this.physics.add.group();
         this.items = this.physics.add.group();
+        
+        // 障害物への衝突判定
         this.physics.add.collider(this.player, this.obstacles, () => this.scene.restart());
+        
+        // ★アイテム取得の判定（重要！）
+        this.physics.add.overlap(this.player, this.items, (player, item) => {
+            if (item.texture.key === 'star') {
+                this.avoidCount += 2;
+            } else if (item.texture.key === 'timer') {
+                this.bonusTime += 2000;
+            }
+            item.destroy(); // アイテムを消す
+            this.scoreText.setText('回避: ' + this.avoidCount + ' / 10');
+        }, null, this);
         
         this.scoreText = this.add.text(16, 16, '回避: 0 / 10', { fontSize: '32px', fill: '#FFF' });
         this.catTraps = [];
@@ -95,7 +108,7 @@
     }
 
     function update(time) {
-        if (!this.gameStarted) return; // 開始前は動かさない
+        if (!this.gameStarted) return;
 
         this.player.setTexture(!this.player.body.touching.down ? 'jump' : 'run');
         if (this.cursors.up.isDown && this.player.body.touching.down) this.player.setVelocityY(-900);
