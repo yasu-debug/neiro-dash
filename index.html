@@ -13,7 +13,7 @@
         width: 800, height: 600,
         physics: { 
             default: 'arcade', 
-            arcade: { gravity: { y: 1000 }, debug: false } // 重力を少し強くしました
+            arcade: { gravity: { y: 1200 }, debug: false } // 重力を少し強めに設定
         }, 
         scene: { preload: preload, create: create, update: update }
     };
@@ -30,36 +30,36 @@
     }
 
     function create() {
-        // 背景を表示
+        // 1. 背景
         this.add.image(400, 300, 'background');
 
-        // 地面：透明な壁を作ってプレイヤーを支えます
+        // 2. 地面（物理演算で確実に立つ）
         this.ground = this.physics.add.staticGroup();
-        this.ground.create(400, 580, null).setSize(800, 40).setVisible(false);
+        this.ground.create(400, 590, null).setSize(800, 20).setVisible(false);
 
-        // プレイヤー
-        this.player = this.physics.add.sprite(150, 450, 'run');
+        // 3. プレイヤー
+        this.player = this.physics.add.sprite(150, 400, 'run');
         this.player.setCollideWorldBounds(true);
+        this.player.setBounce(0.1); // 跳ね返りを小さくして安定させる
         this.physics.add.collider(this.player, this.ground);
 
-        // 障害物グループ
+        // 4. 障害物グループ
         this.obstacles = this.physics.add.group();
-        this.physics.add.collider(this.obstacles, this.ground); // 障害物も地面に乗せる
         
-        // プレイヤーと障害物がぶつかったらゲームオーバー
-        this.physics.add.overlap(this.player, this.obstacles, () => {
-            this.scene.restart(); // ぶつかったらリスタート！
+        // プレイヤーと障害物の衝突
+        this.physics.add.collider(this.player, this.obstacles, () => {
+            this.scene.restart(); // ぶつかったらやり直し
         });
 
-        // 障害物を生成するタイマー
+        // 障害物生成タイマー
         this.time.addEvent({
-            delay: 1500,
+            delay: 1800,
             callback: () => {
                 const obsList = ['obs1', 'obs2', 'obs3', 'obs6'];
-                const key = Phaser.Math.RND.pick(obsList);
-                let obs = this.obstacles.create(850, 500, key);
-                obs.setVelocityX(-400); // 左へ移動
-                obs.body.setAllowGravity(false); // 障害物は重力の影響を受けないようにする
+                let obs = this.obstacles.create(850, 540, Phaser.Math.RND.pick(obsList));
+                obs.setVelocityX(-400);
+                obs.setAllowGravity(false);
+                obs.setImmovable(true); // 障害物が動かないように固定
             },
             loop: true
         });
@@ -68,16 +68,21 @@
     }
 
     function update() {
-        // ジャンプ中か走っているかの画像切り替え
+        // 画面外の障害物を消す処理
+        this.obstacles.getChildren().forEach(obs => {
+            if (obs.x < -50) obs.destroy();
+        });
+
+        // 画像の切り替え
         if (!this.player.body.touching.down) {
             this.player.setTexture('jump');
         } else {
             this.player.setTexture('run');
         }
 
-        // ジャンプの処理
+        // ジャンプ判定（しっかり地面に接地している時だけジャンプ可能）
         if (this.cursors.up.isDown && this.player.body.touching.down) {
-            this.player.setVelocityY(-600);
+            this.player.setVelocityY(-700); // ジャンプ力を強化
         }
     }
 </script>
