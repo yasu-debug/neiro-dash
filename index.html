@@ -1,4 +1,69 @@
-async function create() {
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>ねいろのダッシュ！</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyACV13o8mGiTP6m2wtvRPBG_wX2Xcbb-hI",
+            authDomain: "neirogameanoban.firebaseapp.com",
+            projectId: "neirogameanoban",
+            storageBucket: "neirogameanoban.firebasestorage.app",
+            messagingSenderId: "884708706267",
+            appId: "1:884708706267:web:b9ffc17361554427aa89fe",
+            measurementId: "G-303LBLLY8B"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const RANKING_COLLECTION = "neiro_dash_rankings";
+
+        window.getRanking = async () => {
+            const q = query(collection(db, RANKING_COLLECTION), orderBy("score", "asc"), limit(3));
+            const snapshot = await getDocs(q);
+            let result = [];
+            snapshot.forEach(doc => result.push(doc.data()));
+            return result;
+        };
+
+        window.saveRanking = async (name, time) => {
+            await addDoc(collection(db, RANKING_COLLECTION), { 
+                name: name, score: parseFloat(time), createdAt: serverTimestamp() 
+            });
+        };
+    </script>
+    <style>body { margin: 0; overflow: hidden; }</style>
+</head>
+<body>
+<script>
+    const config = {
+        type: Phaser.AUTO, width: 800, height: 600,
+        physics: { default: 'arcade', arcade: { gravity: { y: 1400 }, debug: false } }, 
+        scene: { preload: preload, create: create, update: update }
+    };
+    const game = new Phaser.Game(config);
+
+    function preload() {
+        this.load.image('run', 'Neiro1.png');
+        this.load.image('jump', 'Neiro2.png');
+        this.load.image('background', 'background.png');
+        this.load.image('obs1', 'obstacles1.png');
+        this.load.image('obs2', 'obstacles2.png');
+        this.load.image('obs3', 'obstacles3.png');
+        this.load.image('obs6', 'obstacles6.png');
+        this.load.image('catSleep', 'obstacles4Cat.png');
+        this.load.image('catAngry', 'obstacles5Cat.png');
+        this.load.image('star', 'star.png');
+        this.load.image('timer', 'timer.png');
+        this.load.image('startButton', 'start.png');
+        this.load.image('ytIcon', 'logo.png');
+        this.load.audio('bgm', 'bgm1.mp3');
+    }
+
+    async function create() {
         this.add.image(400, 300, 'background');
         this.scoreText = this.add.text(16, 16, '回避: 0 / 10', { fontSize: '32px', fill: '#FFF' });
 
@@ -7,32 +72,32 @@ async function create() {
         rankings.forEach((r, i) => rankText += `${i+1}位: ${r.name} - ${r.score}秒\n`);
         this.rankingText = this.add.text(16, 60, rankText, { fontSize: '18px', fill: '#000', backgroundColor: '#fff', padding: 5 });
 
-        // --- 1. グループを先に作る ---
+        // グループ作成
         this.obstacles = this.physics.add.group();
         this.items = this.physics.add.group();
         this.catTraps = [];
 
-        // --- 2. プレイヤー作成 ---
+        // プレイヤー作成
         this.player = this.physics.add.sprite(150, 400, 'run').setVisible(false);
         this.player.body.setAllowGravity(true);
         this.ground = this.physics.add.staticGroup().create(400, 610, null).setSize(800, 40).setVisible(false);
         this.physics.add.collider(this.player, this.ground);
 
-        // --- 3. 衝突判定を追加（重要！） ---
+        // 衝突判定
         this.physics.add.collider(this.player, this.obstacles, () => this.resetGame());
         this.physics.add.overlap(this.player, this.items, (player, item) => {
             item.destroy();
             this.bonusTime = (this.bonusTime || 0) + 2000;
         });
 
-        // --- 4. その他のUI作成 ---
+        // ボタン・アイコン
         this.startBtn = this.add.image(400, 350, 'startButton').setInteractive();
         const ytIcon = this.add.image(0, 0, 'ytIcon').setScale(0.15);
         const ytLabel = this.add.text(0, 35, 'YouTubeへ', { fontSize: '20px', fill: '#000', backgroundColor: '#fff', padding: 5 }).setOrigin(0.5);
         this.ytContainer = this.add.container(400, 500, [ytIcon, ytLabel]).setInteractive(new Phaser.Geom.Rectangle(-50, -50, 100, 100), Phaser.Geom.Rectangle.Contains);
         this.ytContainer.on('pointerdown', () => window.open('https://www.youtube.com/channel/UC9tdREypdhZQ9Hemq82r95Q', '_blank'));
 
-        // --- 5. リセットとスタート関数 ---
+        // リセット処理
         this.resetGame = () => {
             this.gameStarted = false;
             this.avoidCount = 0;
@@ -49,21 +114,3 @@ async function create() {
             this.catTraps = [];
             this.sound.stopAll();
         };
-
-        const startGame = () => {
-            if (this.gameStarted) return;
-            this.startBtn.setVisible(false);
-            this.ytContainer.setVisible(false);
-            this.rankingText.setVisible(false);
-            this.player.setVisible(true).body.enable = true;
-            this.player.setPosition(150, 400);
-            this.gameStarted = true;
-            this.startTime = this.time.now;
-            this.sound.play('bgm', { loop: true });
-        };
-
-        this.startBtn.on('pointerdown', startGame);
-        this.input.keyboard.on('keydown-ENTER', startGame);
-        this.time.addEvent({ delay: 1500, callback: spawnObstacle, callbackScope: this, loop: true });
-        this.cursors = this.input.keyboard.createCursorKeys();
-    }
