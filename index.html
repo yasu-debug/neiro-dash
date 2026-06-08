@@ -64,17 +64,15 @@ function spawnObstacle() {
         const obsList = ['obs1', 'obs2', 'obs3', 'obs6'];
         let key = Phaser.Math.RND.pick(obsList);
         
-        // 障害物を生成
-        let obs = this.obstacles.create(900, 540, key);
-        obs.setVelocityX(-350);
+        // 1. 生成位置を少し下に (540 → 550 に変更)
+        // 2. スピードを少しアップ (-350 → -450 に変更)
+        let obs = this.obstacles.create(900, 550, key);
+        obs.setVelocityX(-450); 
         obs.body.setAllowGravity(false);
         
-        // ★ここを修正！判定ボックスを画像より一回り小さくします
-        // widthとheightの数値を小さくすることで、当たり判定を厳しく（＝飛び越えやすく）します
-        obs.body.setSize(obs.width * 0.6, obs.height * 0.8);
-        
-        // 判定ボックスの位置を微調整（必要に応じて）
-        obs.body.setOffset(obs.width * 0.2, obs.height * 0.1);
+        // 判定の微調整 (画像に対して当たり判定を少しだけ絞る)
+        obs.body.setSize(obs.width * 0.5, obs.height * 0.7);
+        obs.body.setOffset(obs.width * 0.25, obs.height * 0.15);
     }
     function update() {
         // 画像切り替え
