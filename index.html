@@ -84,6 +84,25 @@
         this.ytContainer = this.add.container(400, 500, [ytIcon, ytLabel]).setInteractive(new Phaser.Geom.Rectangle(-50, -50, 100, 100), Phaser.Geom.Rectangle.Contains);
         this.ytContainer.on('pointerdown', () => window.open('https://www.youtube.com/channel/UC9tdREypdhZQ9Hemq82r95Q', '_blank'));
 
+// --- アイテム取得の判定 ---
+this.physics.add.overlap(this.player, this.items, (player, item) => {
+    item.destroy(); // アイテムを消す
+    this.bonusTime += 2000; // 2秒ボーナス（例）
+    // 必要ならここでスコアを増やす処理などを追加
+});
+
+// --- 猫トラップの判定 ---
+this.physics.add.overlap(this.player, this.obstacles, (player, obs) => {
+    // 障害物（obs）が猫の場合の特別な処理が必要ならここに書く
+    // 今はとりあえずリセットさせる
+    if (obs.texture.key === 'catSleep' || obs.texture.key === 'catAngry') {
+        this.resetGame();
+    } else {
+        this.resetGame();
+    }
+});
+
+        
         this.resetGame = () => {
             this.gameStarted = false;
             this.avoidCount = 0;
