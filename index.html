@@ -37,6 +37,9 @@
 
         this.player = this.physics.add.sprite(150, 400, 'run');
         this.player.setCollideWorldBounds(true);
+        // プレイヤーの判定も少しだけ小さくするとより快適です
+        this.player.body.setSize(this.player.width * 0.7, this.player.height * 0.8);
+        
         this.physics.add.collider(this.player, this.ground);
 
         this.obstacles = this.physics.add.group();
@@ -62,14 +65,11 @@
         this.scoreText = this.add.text(16, 16, '回避: 0 / 10', { fontSize: '32px', fill: '#FFF' });
 
         this.catTraps = [];
-        this.itemsMoving = [];
-
         this.time.addEvent({ delay: 1500, callback: spawnObstacle, callbackScope: this, loop: true });
         this.cursors = this.input.keyboard.createCursorKeys();
     }
 
     function spawnObstacle() {
-        // スピードを全体的に少し落としました (-800 -> -600)
         const speed = -750;
         const rand = Math.random();
 
@@ -77,17 +77,19 @@
             let cat = this.obstacles.create(900, 550, 'catSleep');
             cat.setVelocityX(speed);
             cat.body.setAllowGravity(false);
+            // 猫の判定を60%に
+            cat.body.setSize(cat.width * 0.6, cat.height * 0.6);
             this.catTraps.push(cat);
         } else if (rand < 0.5) {
-            // スターとタイマーを上部（Y=100）に流す（落下なし！）
             let item = this.items.create(900, 100, Math.random() < 0.5 ? 'star' : 'timer');
             item.setVelocityX(speed);
             item.body.setAllowGravity(false);
-            this.itemsMoving.push(item);
         } else {
             let obs = this.obstacles.create(900, 550, Phaser.Math.RND.pick(['obs1', 'obs2', 'obs3', 'obs6']));
             obs.setVelocityX(speed);
             obs.body.setAllowGravity(false);
+            // 通常障害物の判定も60%に
+            obs.body.setSize(obs.width * 0.6, obs.height * 0.6);
         }
     }
 
@@ -95,18 +97,12 @@
         this.player.setTexture(!this.player.body.touching.down ? 'jump' : 'run');
         if (this.cursors.up.isDown && this.player.body.touching.down) this.player.setVelocityY(-900);
 
-        // 猫処理もスピード調整
-        // 猫処理（ジャンプ力をアップ！）
         this.catTraps.forEach(cat => {
             if (cat.active && cat.x < 700 && cat.texture.key === 'catSleep') {
                 cat.setTexture('catAngry');
-                // ジャンプ力を強化！(-1500くらいにすると画面中央より上まで届きます)
                 cat.setVelocityY(-1500); 
                 this.time.delayedCall(300, () => { 
-                    if(cat.active) { 
-                        cat.setVelocityY(0); 
-                        cat.setVelocityX(-800); 
-                    }
+                    if(cat.active) { cat.setVelocityY(0); cat.setVelocityX(-800); }
                 });
             }
         });
