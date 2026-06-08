@@ -68,7 +68,7 @@
 
     async function create() {
         this.add.image(400, 300, 'background');
-
+        this.add.image(400, 150, 'title').setScale(0.8);
         // YouTubeアイコン
         const ytIcon = this.add.image(60, 540, 'ytIcon').setScale(0.15).setInteractive();
         ytIcon.on('pointerdown', () => window.open('https://www.youtube.com/channel/UC9tdREypdhZQ9Hemq82r95Q', '_blank'));
