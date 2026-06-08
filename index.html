@@ -69,7 +69,6 @@
         this.load.image('star', 'star.png');
         this.load.image('timer', 'timer.png');
         this.load.image('startButton', 'start.png');
-        // ★パスをシンプルにしました。これで動かない場合はファイルの場所を確認してね！
         this.load.image('ytIcon', 'logo.png');
         this.load.audio('bgm', 'bgm1.mp3');
     }
@@ -77,11 +76,14 @@
     async function create() {
         this.add.image(400, 300, 'background');
         
-        // --- ランキング表示 ---
+        // --- 1. 回避カウント（既存） ---
+        this.scoreText = this.add.text(16, 16, '回避: 0 / 10', { fontSize: '32px', fill: '#FFF' });
+
+        // --- 2. ランキング表示（左側・回避カウントの下） ---
         const rankings = await window.getRanking();
         let rankText = "【ランキング TOP3】\n";
         rankings.forEach((r, i) => rankText += `${i+1}位: ${r.name} - ${r.score}秒\n`);
-        this.add.text(500, 50, rankText, { fontSize: '20px', fill: '#000', backgroundColor: '#fff', padding: 10 });
+        this.add.text(16, 60, rankText, { fontSize: '18px', fill: '#000', backgroundColor: '#fff', padding: 5 });
 
         this.gameStarted = false;
         this.player = this.physics.add.sprite(150, 400, 'run').setVisible(false);
@@ -93,7 +95,7 @@
         const startGame = () => {
             if (this.gameStarted) return;
             this.startBtn.setVisible(false);
-            this.ytIcon.setVisible(false);
+            this.ytContainer.setVisible(false); // コンテナごと非表示
             this.player.setVisible(true).body.enable = true;
             this.gameStarted = true;
             this.startTime = this.time.now;
@@ -101,13 +103,17 @@
         };
 
         this.startBtn = this.add.image(400, 350, 'startButton').setInteractive().on('pointerdown', startGame);
-        this.ytIcon = this.add.image(400, 450, 'ytIcon').setInteractive().setScale(0.2).on('pointerdown', () => window.open('https://www.youtube.com/channel/UC9tdREypdhZQ9Hemq82r95Q', '_blank'));
+
+        // --- 3. YouTubeアイコンとテキスト（画面中央・星の位置） ---
+        const ytIcon = this.add.image(0, 0, 'ytIcon').setScale(0.15);
+        const ytLabel = this.add.text(0, 35, 'YouTubeへ', { fontSize: '20px', fill: '#000', backgroundColor: '#fff', padding: 5 }).setOrigin(0.5);
+        this.ytContainer = this.add.container(400, 250, [ytIcon, ytLabel]).setInteractive(new Phaser.Geom.Rectangle(-50, -50, 100, 100), Phaser.Geom.Rectangle.Contains);
+        this.ytContainer.on('pointerdown', () => window.open('https://www.youtube.com/channel/UC9tdREypdhZQ9Hemq82r95Q', '_blank'));
 
         this.input.keyboard.on('keydown-ENTER', startGame);
         this.obstacles = this.physics.add.group();
         this.items = this.physics.add.group();
         this.physics.add.collider(this.player, this.obstacles, () => { this.sound.stopAll(); this.scene.restart(); });
-        this.scoreText = this.add.text(16, 16, '回避: 0 / 10', { fontSize: '32px', fill: '#FFF' });
         this.catTraps = [];
         this.avoidCount = 0;
         this.bonusTime = 0;
