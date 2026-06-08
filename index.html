@@ -42,20 +42,25 @@
         this.obstacles = this.physics.add.group();
         this.items = this.physics.add.group();
         
-        this.physics.add.collider(this.player, this.obstacles, () => this.scene.restart());
+        this.physics.add.collider(this.player, this.obstacles, () => {
+            // リセット時、連続回避カウントもリセット
+            this.consecutiveAvoids = 0;
+            this.scene.restart();
+        });
         
-        // アイテム取得処理
         this.physics.add.overlap(this.player, this.items, (player, item) => {
             if (item.texture.key === 'star') {
                 this.avoidCount += 2;
+                this.consecutiveAvoids = 0;
             } else if (item.texture.key === 'timer') {
-                this.bonusTime += 2000; // 終了計算時に引くための加算
+                this.bonusTime += 2000;
+                this.consecutiveAvoids = 0;
             }
             item.destroy();
         });
 
         this.avoidCount = 0;
-        this.consecutiveAvoids = 0; // 連続回避カウント
+        this.consecutiveAvoids = 0;
         this.startTime = this.time.now;
         this.bonusTime = 0;
         this.scoreText = this.add.text(16, 16, '回避: 0 / 10', { fontSize: '32px', fill: '#FFF' });
@@ -68,16 +73,18 @@
     }
 
     function spawnObstacle() {
-        const speed = -600;
+        // スピードを -800 に強化
+        const speed = -800;
         const rand = Math.random();
 
-        if (rand < 0.3) { // 猫トラップ
+        if (rand < 0.3) { 
             let cat = this.obstacles.create(900, 550, 'catSleep');
             cat.setVelocityX(speed);
             cat.body.setAllowGravity(false);
             this.catTraps.push(cat);
-        } else if (rand < 0.4) { // アイテム生成
-            let item = this.items.create(900, 400, Math.random() < 0.5 ? 'star' : 'timer');
+        } else if (rand < 0.4) { 
+            // アイテムを上部（Y=100）に出現させる
+            let item = this.items.create(900, 100, Math.random() < 0.5 ? 'star' : 'timer');
             item.setVelocityX(speed);
             item.body.setAllowGravity(false);
             this.itemsMoving.push(item);
@@ -92,7 +99,6 @@
         this.player.setTexture(!this.player.body.touching.down ? 'jump' : 'run');
         if (this.cursors.up.isDown && this.player.body.touching.down) this.player.setVelocityY(-1200);
 
-        // トラップ・アイテム制御
         this.catTraps.forEach(cat => {
             if (cat.active && cat.x < 700 && cat.texture.key === 'catSleep') {
                 cat.setTexture('catAngry');
@@ -101,15 +107,14 @@
             }
         });
 
-        // 4回連続：タイマーが上部を直進
+        // 連続回避によるアイテム軌道変化
         if (this.consecutiveAvoids === 4) {
-            this.itemsMoving.forEach(i => { if(i.texture.key === 'timer') i.y = 200; });
+            this.itemsMoving.forEach(i => { if(i.texture.key === 'timer') i.y = 100; });
         }
-        // 6回連続：スターが上部→中央下→左へ直進
         if (this.consecutiveAvoids === 6) {
             this.itemsMoving.forEach(i => {
                 if(i.texture.key === 'star') {
-                    i.y = 200;
+                    i.y = 100;
                     this.time.delayedCall(500, () => { if(i.active) i.y = 450; });
                 }
             });
