@@ -13,7 +13,7 @@
         width: 800, height: 600,
         physics: { 
             default: 'arcade', 
-            arcade: { gravity: { y: 1600 }, debug: false } 
+            arcade: { gravity: { y: 2000 }, debug: false } 
         }, 
         scene: { preload: preload, create: create, update: update }
     };
@@ -87,7 +87,7 @@ function spawnObstacle() {
             // ジャンプ判定
         if (this.cursors.up.isDown && this.player.body.touching.down) {
             // ここを -700 から -950 に変更！
-            this.player.setVelocityY(-1000); 
+            this.player.setVelocityY(-1200); 
         }
 
         // 画面左端（-100）を超えた障害物を削除（これでメモリ不足やバグを防ぎます）
