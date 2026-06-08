@@ -13,7 +13,7 @@
         width: 800, height: 600,
         physics: { 
             default: 'arcade', 
-            arcade: { gravity: { y: 400 }, debug: false } 
+            arcade: { gravity: { y: 1200 }, debug: false } 
         }, 
         scene: { preload: preload, create: create, update: update }
     };
@@ -27,31 +27,33 @@
         this.load.image('obs2', 'obstacles2.png');
         this.load.image('obs3', 'obstacles3.png');
         this.load.image('obs6', 'obstacles6.png');
+        // 猫トラップ用画像の読み込み
+        this.load.image('catSleep', 'obstacles4Cat.png');
+        this.load.image('catAngry', 'obstacles5Cat.png');
     }
 
     function create() {
         this.add.image(400, 300, 'background');
 
-        // 地面
         this.ground = this.physics.add.staticGroup();
         this.ground.create(400, 610, null).setSize(800, 40).setVisible(false);
 
-        // プレイヤー
         this.player = this.physics.add.sprite(150, 400, 'run');
         this.player.setCollideWorldBounds(true);
         this.physics.add.collider(this.player, this.ground);
 
-        // 障害物用グループ
         this.obstacles = this.physics.add.group();
         
-        // 衝突したら最初から
+        // 衝突したらリスタート
         this.physics.add.collider(this.player, this.obstacles, () => {
             this.scene.restart();
         });
 
-        // 障害物を生成するタイマー
+        // 猫トラップを追跡するためのリスト
+        this.catTraps = [];
+
         this.time.addEvent({
-            delay: 2000, // 2秒ごとに生成
+            delay: 2000,
             callback: spawnObstacle,
             callbackScope: this,
             loop: true
@@ -60,39 +62,48 @@
         this.cursors = this.input.keyboard.createCursorKeys();
     }
 
-function spawnObstacle() {
-        const obsList = ['obs1', 'obs2', 'obs3', 'obs6'];
-        let key = Phaser.Math.RND.pick(obsList);
-        
-        // 1. 生成位置を少し下に (540 → 550 に変更)
-        // 2. スピードを少しアップ (-350 → -450 に変更)
-        let obs = this.obstacles.create(900, 550, key);
-        obs.setVelocityX(-450); 
-        obs.body.setAllowGravity(false);
-        
-        // 判定の微調整 (画像に対して当たり判定を少しだけ絞る)
-        obs.body.setSize(obs.width * 0.5, obs.height * 0.7);
-        obs.body.setOffset(obs.width * 0.25, obs.height * 0.15);
+    function spawnObstacle() {
+        // 33%の確率で猫トラップを出現させる
+        if (Math.random() < 0.33) {
+            let cat = this.obstacles.create(900, 550, 'catSleep');
+            cat.setVelocityX(-450);
+            cat.body.setAllowGravity(false);
+            // 判定を調整
+            cat.body.setSize(cat.width * 0.5, cat.height * 0.7);
+            this.catTraps.push(cat); // 監視リストに追加
+        } else {
+            const obsList = ['obs1', 'obs2', 'obs3', 'obs6'];
+            let key = Phaser.Math.RND.pick(obsList);
+            let obs = this.obstacles.create(900, 550, key);
+            obs.setVelocityX(-450); 
+            obs.body.setAllowGravity(false);
+            obs.body.setSize(obs.width * 0.5, obs.height * 0.7);
+            obs.body.setOffset(obs.width * 0.25, obs.height * 0.15);
+        }
     }
+
     function update() {
-        // 画像切り替え
+        // 猫トラップの変身処理（画面中央X=400で変身）
+        this.catTraps.forEach((cat) => {
+            if (cat.active && cat.x < 400 && cat.texture.key === 'catSleep') {
+                cat.setTexture('catAngry');
+                // 変身に合わせて少し上に判定をずらして、ジャンプで当たってしまうようにする
+                cat.y -= 80; 
+            }
+        });
+
         if (!this.player.body.touching.down) {
             this.player.setTexture('jump');
         } else {
             this.player.setTexture('run');
         }
 
-            // ジャンプ判定
         if (this.cursors.up.isDown && this.player.body.touching.down) {
-            // ここを -700 から -950 に変更！
             this.player.setVelocityY(-1200); 
         }
 
-        // 画面左端（-100）を超えた障害物を削除（これでメモリ不足やバグを防ぎます）
         this.obstacles.getChildren().forEach(obs => {
-            if (obs.x < -100) {
-                obs.destroy();
-            }
+            if (obs.x < -100) obs.destroy();
         });
     }
 </script>
