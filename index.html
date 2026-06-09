@@ -195,13 +195,29 @@
 
         if (this.avoidCount >= 10 && this.gameStarted) {
             this.gameStarted = false;
-            let finalTime = ((this.time.now - this.startTime - (this.bonusTime || 0)) / 1000).toFixed(2);
+            let finalTime = parseFloat(((this.time.now - this.startTime - (this.bonusTime || 0)) / 1000).toFixed(2));
             this.sound.stopAll();
-            const name = prompt("クリア！ " + Math.max(0, finalTime) + " 秒！お名前を入力してね！");
-            if (name) window.saveRanking(name, finalTime).then(() => location.reload());
-            else location.reload();
+
+            // ランキングを先に取得して比較する
+            window.getRanking().then(rankings => {
+                // 3人未満なら無条件でランクイン、3人以上なら最下位のスコアより速ければランクイン
+                const isRankIn = rankings.length < 3 || finalTime < rankings[2].score;
+
+                if (isRankIn) {
+                    const name = prompt("ランクイン！ " + Math.max(0, finalTime) + " 秒！お名前を入力してね！");
+                    if (name) {
+                        window.saveRanking(name, finalTime).then(() => location.reload());
+                    } else {
+                        location.reload();
+                    }
+                } else {
+                    alert("クリア！タイムは " + Math.max(0, finalTime) + " 秒でした！\n今回はランク外でした。また挑戦してね🐾");
+                    location.reload();
+                }
+            });
         }
-    }
+        // ランキングを先に取得して比較する
+        
 </script>
 </body>
 </html>
