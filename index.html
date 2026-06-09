@@ -70,8 +70,8 @@
 
     async function create() {
         this.add.image(400, 300, 'background');
-        
-        // タイトルとボタンを明示的に作成
+        this.gameStarted = false;
+
         this.titleImage = this.add.image(400, 100, 'title').setScale(0.8);
         this.startBtn = this.add.image(400, 450, 'startButton').setInteractive();
 
@@ -97,11 +97,11 @@
         this.player.body.setAllowGravity(true);
         this.ground = this.physics.add.staticRectangle(400, 610, 800, 40);
         this.physics.add.collider(this.player, this.ground);
-        
-        this.physics.add.collider(this.player, this.obstacles, () => this.resetGame());
+        this.physics.add.collider(this.player, this.obstacles, () => location.reload());
 
         const startGame = () => {
             if (this.gameStarted) return;
+            this.gameStarted = true;
             this.startBtn.setVisible(false);
             this.rankDisplay.setVisible(false);
             this.ctrlDisplay.setVisible(false);
@@ -110,15 +110,18 @@
             this.scoreText.setVisible(true);
             this.timerText.setVisible(true);
             this.player.setVisible(true).body.enable = true;
-            this.gameStarted = true;
             this.startTime = this.time.now;
+            this.bonusTime = 0;
             this.sound.play('bgm', { loop: true });
         };
 
         this.startBtn.on('pointerdown', startGame);
         this.input.keyboard.on('keydown-ENTER', startGame);
+        this.input.on('pointerdown', (pointer) => {
+            if (!this.gameStarted) startGame();
+            else if (this.player.body.touching.down) this.player.setVelocityY(-900);
+        });
         
-        this.resetGame = () => { location.reload(); };
         this.time.addEvent({ delay: 1500, callback: () => { if(this.gameStarted) spawnObstacle.call(this); }, loop: true });
         this.cursors = this.input.keyboard.createCursorKeys();
     }
@@ -155,7 +158,7 @@
                     if (name) window.saveRanking(name, finalTime).then(() => location.reload());
                     else location.reload();
                 } else {
-                    alert("クリア！タイムは " + finalTime + " 秒でした！");
+                    alert("クリア！タイムは " + finalTime + " 秒でした！\nおしい！あとちょっとでランクインだったよ🐾 次はまた挑戦してね！");
                     location.reload();
                 }
             });
