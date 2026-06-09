@@ -23,13 +23,11 @@
         const RANKING_COLLECTION = "neiro_dash_rankings";
 
         window.getRanking = async () => {
-            try {
-                const q = query(collection(db, RANKING_COLLECTION), orderBy("score", "asc"), limit(3));
-                const snapshot = await getDocs(q);
-                let result = [];
-                snapshot.forEach(doc => result.push(doc.data()));
-                return result;
-            } catch (e) { return []; }
+            const q = query(collection(db, RANKING_COLLECTION), orderBy("score", "asc"), limit(3));
+            const snapshot = await getDocs(q);
+            let result = [];
+            snapshot.forEach(doc => result.push(doc.data()));
+            return result;
         };
 
         window.saveRanking = async (name, time) => {
@@ -70,10 +68,9 @@
 
     async function create() {
         this.add.image(400, 300, 'background');
-        this.gameStarted = false;
-
-        this.titleImage = this.add.image(400, 100, 'title').setScale(0.8);
-        this.startBtn = this.add.image(400, 450, 'startButton').setInteractive();
+        
+        // ★タイトル位置とサイズ調整（Y=120に上げ、setScaleを少し小さく）
+        this.titleImage = this.add.image(400, 120, 'title').setScale(0.6);
 
         const ytIcon = this.add.image(60, 540, 'ytIcon').setScale(0.15).setInteractive();
         ytIcon.on('pointerdown', () => window.open('https://www.youtube.com/channel/UC9tdREypdhZQ9Hemq82r95Q', '_blank'));
@@ -81,9 +78,14 @@
         const rankings = await window.getRanking();
         let rankStr = "【ランキング TOP3】\n";
         rankings.forEach((r, i) => rankStr += `${i+1}位: ${r.name} - ${r.score}秒\n`);
-        this.rankDisplay = this.add.text(400, 300, rankStr, { fontSize: '24px', fill: '#000', backgroundColor: '#fff', padding: 10 }).setOrigin(0.5);
+        
+        // ★ランキング位置を少し下に配置
+        this.rankDisplay = this.add.text(400, 300, rankStr, { 
+            fontSize: '24px', fill: '#000', backgroundColor: '#fff', padding: 10 
+        }).setOrigin(0.5);
 
-        this.ctrlDisplay = this.add.text(780, 580, "【操作方法】\nスタート: エンターキー\nジャンプ: 上矢印キー / 画面タップ", { fontSize: '20px', fill: '#FF4500', align: 'right', fontStyle: 'bold', stroke: '#000000', strokeThickness: 4 }).setOrigin(1, 1);
+        const ctrlStr = "【操作方法】\nスタート: エンターキー\nジャンプ: 上矢印キー / 画面タップ";
+        this.ctrlDisplay = this.add.text(780, 580, ctrlStr, { fontSize: '20px', fill: '#FF4500', align: 'right', fontStyle: 'bold', stroke: '#000000', strokeThickness: 4 }).setOrigin(1, 1);
 
         this.scoreText = this.add.text(16, 16, '回避: 0 / 10', { fontSize: '32px', fill: '#FFF' }).setVisible(false);
         this.timerText = this.add.text(780, 16, '0.00秒', { fontSize: '32px', fill: '#FFF' }).setOrigin(1, 0).setVisible(false);
@@ -95,38 +97,61 @@
 
         this.player = this.physics.add.sprite(150, 400, 'run').setVisible(false);
         this.player.body.setAllowGravity(true);
-        this.ground = this.physics.add.staticRectangle(400, 610, 800, 40);
+        this.ground = this.physics.add.staticGroup().create(400, 610, null).setSize(800, 40).setVisible(false);
         this.physics.add.collider(this.player, this.ground);
-        this.physics.add.collider(this.player, this.obstacles, () => location.reload());
+        
+        this.physics.add.collider(this.player, this.obstacles, () => this.resetGame());
+        this.physics.add.overlap(this.player, this.items, (player, item) => {
+            item.destroy();
+            if (item.texture.key === 'star') {
+                this.avoidCount += 2;
+                this.scoreText.setText('回避: ' + this.avoidCount + ' / 10');
+            } else if (item.texture.key === 'timer') {
+                this.bonusTime = (this.bonusTime || 0) + 2000;
+            }
+        });
+
+        this.startBtn = this.add.image(400, 450, 'startButton').setInteractive();
 
         const startGame = () => {
             if (this.gameStarted) return;
-            this.gameStarted = true;
             this.startBtn.setVisible(false);
             this.rankDisplay.setVisible(false);
             this.ctrlDisplay.setVisible(false);
-            this.titleImage.setVisible(false);
+            this.titleImage.setVisible(false); // タイトル隠す
             ytIcon.setVisible(false);
             this.scoreText.setVisible(true);
             this.timerText.setVisible(true);
             this.player.setVisible(true).body.enable = true;
+            this.player.setPosition(150, 400);
+            this.gameStarted = true;
             this.startTime = this.time.now;
             this.bonusTime = 0;
+            this.avoidCount = 0;
+            this.scoreText.setText('回避: 0 / 10');
             this.sound.play('bgm', { loop: true });
         };
 
         this.startBtn.on('pointerdown', startGame);
         this.input.keyboard.on('keydown-ENTER', startGame);
         this.input.on('pointerdown', (pointer) => {
-            if (!this.gameStarted) startGame();
-            else if (this.player.body.touching.down) this.player.setVelocityY(-900);
+            if (this.gameStarted && this.player.body.touching.down) this.player.setVelocityY(-900);
         });
+
+        this.resetGame = () => { location.reload(); };
         
-        this.time.addEvent({ delay: 1500, callback: () => { if(this.gameStarted) spawnObstacle.call(this); }, loop: true });
+        this.time.addEvent({ delay: 1500, callback: spawnObstacle, callbackScope: this, loop: true });
+        this.time.addEvent({ delay: 100, callback: () => {
+            if (this.gameStarted) {
+                let currentTime = ((this.time.now - this.startTime - (this.bonusTime || 0)) / 1000).toFixed(2);
+                this.timerText.setText(Math.max(0, currentTime) + '秒');
+            }
+        }, loop: true });
         this.cursors = this.input.keyboard.createCursorKeys();
     }
 
     function spawnObstacle() {
+        if (!this.gameStarted) return;
         const rand = Math.random();
         if (rand < 0.3) {
             let cat = this.obstacles.create(900, 550, 'catSleep').setVelocityX(-750);
@@ -144,24 +169,25 @@
         if (this.cursors.up.isDown && this.player.body.touching.down) this.player.setVelocityY(-900);
         this.player.setTexture(!this.player.body.touching.down ? 'jump' : 'run');
         
+        this.catTraps.forEach(cat => {
+            if (cat.active && cat.x < 700 && cat.texture.key === 'catSleep') {
+                cat.setTexture('catAngry');
+                cat.setVelocityY(-1500);
+                this.time.delayedCall(300, () => { if(cat.active) { cat.setVelocityY(0); cat.setVelocityX(-800); }});
+            }
+        });
+        
         this.obstacles.getChildren().forEach(obs => { 
             if (obs.x < -200) { obs.destroy(); this.avoidCount++; this.scoreText.setText('回避: ' + this.avoidCount + ' / 10'); } 
         });
 
         if (this.avoidCount >= 10 && this.gameStarted) {
             this.gameStarted = false;
-            let finalTime = parseFloat(((this.time.now - this.startTime - (this.bonusTime || 0)) / 1000).toFixed(2));
+            let finalTime = ((this.time.now - this.startTime - (this.bonusTime || 0)) / 1000).toFixed(2);
             this.sound.stopAll();
-            window.getRanking().then(rankings => {
-                if (rankings.length < 3 || finalTime < rankings[2].score) {
-                    const name = prompt("ランクイン！ " + finalTime + " 秒！お名前を入力してね！");
-                    if (name) window.saveRanking(name, finalTime).then(() => location.reload());
-                    else location.reload();
-                } else {
-                    alert("クリア！タイムは " + finalTime + " 秒でした！\nおしい！あとちょっとでランクインだったよ🐾 次はまた挑戦してね！");
-                    location.reload();
-                }
-            });
+            const name = prompt("クリア！ " + Math.max(0, finalTime) + " 秒！お名前を入力してね！");
+            if (name) window.saveRanking(name, finalTime).then(() => location.reload());
+            else location.reload();
         }
     }
 </script>
